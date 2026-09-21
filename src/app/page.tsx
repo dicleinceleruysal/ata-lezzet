@@ -14,7 +14,7 @@ export default function Home() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-gradient-to-b from-amber-200/30 via-orange-100/20 to-transparent blur-3xl pointer-events-none z-0" />
 
       {/* Ana İçerik Konteyneri */}
-      <div className="relative z-10 w-full max-w-xl mx-auto px-4 py-8 sm:py-12 flex-1 flex flex-col justify-center space-y-8">
+      <div className="relative z-10 w-full max-w-3xl mx-auto px-4 py-8 sm:py-12 flex-1 flex flex-col justify-center space-y-8">
         {/* 1. Üst Başlık & 3D Pixar Yemek Kümesi */}
         <Header />
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   PixarSoup,
   PixarMainDish,
@@ -11,7 +11,7 @@ import {
 } from './PixarIcons';
 import { getMealCalories } from '@/lib/mealCalories';
 
-interface DailyMenuEntryData {
+export interface DailyMenuEntryData {
   id: string;
   date: string;
   dateStr: string;
@@ -21,7 +21,7 @@ interface DailyMenuEntryData {
   isHoliday?: boolean;
 }
 
-interface MonthlyPlanData {
+export interface MonthlyPlanData {
   id: string;
   year: number;
   month: number;
@@ -29,17 +29,7 @@ interface MonthlyPlanData {
   entries: DailyMenuEntryData[];
 }
 
-interface TodayLunchData {
-  isSunday: boolean;
-  id?: string;
-  date?: string;
-  dateStr: string;
-  dayName: string;
-  mealText: string;
-  items: string[] | string;
-  isHoliday?: boolean;
-  message?: string;
-}
+export type CategoryKey = 'corba' | 'ana_yemek' | 'yan_yemek' | 'salata' | 'tatli' | 'icecek';
 
 function parseDishes(items: unknown, mealText?: string): string[] {
   if (Array.isArray(items)) return items.map(String).filter(Boolean);
@@ -60,8 +50,6 @@ function parseDishes(items: unknown, mealText?: string): string[] {
   return [];
 }
 
-export type CategoryKey = 'corba' | 'ana_yemek' | 'yan_yemek' | 'salata' | 'tatli' | 'icecek';
-
 function normalizeFoodText(str: string): string {
   if (!str) return '';
   return str
@@ -75,10 +63,9 @@ function normalizeFoodText(str: string): string {
     .trim();
 }
 
-// Yemek adına göre kategori tespit eder
 function detectPixarCategory(dishName: string): CategoryKey {
   const norm = normalizeFoodText(dishName);
-  
+
   if (
     norm.includes('corba') ||
     norm.includes('mercimek') ||
@@ -235,7 +222,6 @@ function getPixarIconByCategory(cat: CategoryKey) {
   }
 }
 
-// Her kategori için tamamen farklı, canlı ve şık renk paleti
 const CATEGORY_META: Record<CategoryKey, { label: string; badgeClass: string; iconBox: string; cardBorder: string }> = {
   corba: {
     label: 'Çorba',
@@ -276,16 +262,21 @@ const CATEGORY_META: Record<CategoryKey, { label: string; badgeClass: string; ic
 };
 
 export default function MenuButtons() {
-  const [activeModal, setActiveModal] = useState<'daily' | 'monthly' | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [todayLunch, setTodayLunch] = useState<TodayLunchData | null>(null);
   const [monthlyPlan, setMonthlyPlan] = useState<MonthlyPlanData | null>(null);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [todayIndex, setTodayIndex] = useState<number>(0);
+  const [isSundayToday, setIsSundayToday] = useState<boolean>(false);
+
+  const [showMonthlyList, setShowMonthlyList] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState('');
+
   const [dbMealsMap, setDbMealsMap] = useState<Record<string, CategoryKey>>({});
   const [dbCaloriesMap, setDbCaloriesMap] = useState<Record<string, number>>({});
 
+  // Veritabanındaki özel kalori ve kategori haritasını çek
   useEffect(() => {
     fetch('/api/meals')
       .then((res) => res.json())
@@ -311,428 +302,464 @@ export default function MenuButtons() {
       .catch(() => {});
   }, []);
 
-  const getDishCategory = (dishName: string): CategoryKey => {
+  // Aylık planı doğrudan yükle ve bugünün gününe odaklan
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    setError(null);
+
+    fetch('/api/plans/monthly')
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Aylık yemek listesi yüklenemedi.');
+        return res.json();
+      })
+      .then((data: MonthlyPlanData) => {
+        if (!isMounted) return;
+        setMonthlyPlan(data);
+
+        const now = new Date();
+        const isSunday = now.getDay() === 0;
+        setIsSundayToday(isSunday);
+
+        const entries = data.entries || [];
+        const currentDay = now.getDate();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+
+        // 1. Bugünün tarihine tam eşleşen günü bul
+        let foundIdx = entries.findIndex((e) => {
+          const d = new Date(e.date);
+          return (
+            d.getUTCDate() === currentDay &&
+            d.getUTCMonth() + 1 === currentMonth &&
+            d.getUTCFullYear() === currentYear
+          );
+        });
+
+        // 2. Eğer birebir yıl/ay uymuyorsa, gün numarası eşleşen günü bul (Demo/Test koruması)
+        if (foundIdx === -1) {
+          foundIdx = entries.findIndex((e) => {
+            const d = new Date(e.date);
+            return d.getUTCDate() === currentDay;
+          });
+        }
+
+        // 3. Bulunamazsa ilk güne veya en yakın güne konumlan
+        if (foundIdx === -1) {
+          foundIdx = entries.length > 0 ? 0 : 0;
+        }
+
+        setTodayIndex(foundIdx);
+        setCurrentIndex(foundIdx);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setError(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const getDishCategory = useCallback((dishName: string): CategoryKey => {
     const norm = normalizeFoodText(dishName);
     if (dbMealsMap[norm]) {
       return dbMealsMap[norm];
     }
     return detectPixarCategory(dishName);
-  };
+  }, [dbMealsMap]);
 
-  const getDishCalories = (dishName: string): number => {
+  const getDishCalories = useCallback((dishName: string): number => {
     const norm = normalizeFoodText(dishName);
     if (dbCaloriesMap[norm]) {
       return dbCaloriesMap[norm];
     }
     const cat = getDishCategory(dishName);
     return getMealCalories(dishName, cat);
-  };
+  }, [dbCaloriesMap, getDishCategory]);
 
-  const fetchDailyMenu = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/plans/daily');
-      if (!res.ok) {
-        throw new Error('Günün menüsü yüklenemedi.');
+  const entries = monthlyPlan?.entries || [];
+  const currentEntry = entries[currentIndex] || null;
+
+  // Klavye ok tuşları ile gün geçişi (Sol: Önceki, Sağ: Sonraki)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Eğer kullanıcı arama kutusuna yazıyorsa klavye kısayolunu tetikleme
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+        return;
       }
-      const data = await res.json();
-      if (data.todayLunch) {
-        setTodayLunch(data.todayLunch);
-      } else {
-        throw new Error('Günün yemek listesi bulunamadı.');
+      if (e.key === 'ArrowLeft') {
+        if (currentIndex > 0) {
+          setCurrentIndex((prev) => prev - 1);
+        }
+      } else if (e.key === 'ArrowRight') {
+        if (currentIndex < entries.length - 1) {
+          setCurrentIndex((prev) => prev + 1);
+        }
       }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Bir hata oluştu.');
-    } finally {
-      setLoading(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentIndex, entries.length]);
+
+  const handlePrevDay = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex((prev) => prev - 1);
     }
   };
 
-  const fetchMonthlyPlan = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/plans/monthly');
-      if (!res.ok) {
-        throw new Error('Aylık yemek listesi yüklenemedi.');
-      }
-      const data = await res.json();
-      setMonthlyPlan(data);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Bir hata oluştu.');
-    } finally {
-      setLoading(false);
+  const handleNextDay = () => {
+    if (currentIndex < entries.length - 1) {
+      setCurrentIndex((prev) => prev + 1);
     }
   };
 
-  const handleOpenModal = (type: 'daily' | 'monthly') => {
-    setActiveModal(type);
-    if (type === 'daily') {
-      fetchDailyMenu();
-    } else {
-      fetchMonthlyPlan();
-    }
+  const handleGoToToday = () => {
+    setCurrentIndex(todayIndex);
   };
 
-  const handleCloseModal = () => {
-    setActiveModal(null);
-    setError(null);
-    setSearchQuery('');
+  const handleSelectDay = (index: number) => {
+    setCurrentIndex(index);
+    const cardEl = document.getElementById('daily-menu-card');
+    if (cardEl) {
+      cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   // Aylık liste filtreleme
-  const filteredEntries = (monthlyPlan?.entries || []).filter((entry) => {
-    if (!searchQuery.trim()) return true;
+  const filteredEntries = useMemo(() => {
+    if (!searchQuery.trim()) return entries;
     const q = searchQuery.toLowerCase();
-    return (
-      entry.dateStr.toLowerCase().includes(q) ||
-      entry.dayName.toLowerCase().includes(q) ||
-      entry.mealText.toLowerCase().includes(q)
-    );
-  });
+    return entries.filter((entry) => {
+      return (
+        entry.dateStr.toLowerCase().includes(q) ||
+        entry.dayName.toLowerCase().includes(q) ||
+        entry.mealText.toLowerCase().includes(q)
+      );
+    });
+  }, [entries, searchQuery]);
 
   return (
-    <>
-      <section className="w-full">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
-          {/* 1. GÜNÜN MENÜSÜ BUTONU (3D Pixar Dokulu) */}
-          <button
-            type="button"
-            onClick={() => handleOpenModal('daily')}
-            className="group relative flex flex-col items-center justify-center p-7 sm:p-8 rounded-3xl bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white shadow-[0_14px_28px_rgba(234,88,12,0.25)] hover:shadow-[0_18px_36px_rgba(234,88,12,0.35)] transition-all duration-300 hover:-translate-y-1.5 active:translate-y-0 cursor-pointer min-h-[160px] text-center border-2 border-orange-300/40"
-          >
-            <div className="mb-2 transform group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
-              <PixarSoup className="w-14 h-14" />
-            </div>
+    <section className="w-full space-y-6">
+      {/* 1. GÜNÜN MENÜSÜ KARTI (ANA EKRANDA DOĞRUDAN AÇIK - POPOVER YOK!) */}
+      <div
+        id="daily-menu-card"
+        className="bg-white rounded-3xl p-5 sm:p-8 border-2 border-amber-200/90 shadow-[0_16px_36px_rgba(245,158,11,0.12)] relative overflow-hidden transition-all duration-300"
+      >
+        {/* Yükleniyor Durumu */}
+        {loading && (
+          <div className="py-20 text-center text-stone-500 space-y-3">
+            <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs uppercase font-extrabold tracking-widest text-amber-800">
+              Günün Menüsü Hazırlanıyor...
+            </p>
+          </div>
+        )}
 
-            <span className="text-2xl sm:text-3xl font-black tracking-tight drop-shadow-xs">
-              Günün Menüsü
-            </span>
-            <span className="text-xs uppercase tracking-wider font-bold text-amber-100 mt-1 flex items-center gap-1">
-              <span>Bugünün Öğle Yemeği</span>
-              <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
-            </span>
-          </button>
+        {/* Hata Durumu */}
+        {!loading && error && (
+          <div className="p-5 bg-rose-50 text-rose-800 rounded-2xl border border-rose-200 text-sm font-bold text-center">
+            {error}
+          </div>
+        )}
 
-          {/* 2. AYLIK LİSTE BUTONU (3D Pixar Dokulu) */}
-          <button
-            type="button"
-            onClick={() => handleOpenModal('monthly')}
-            className="group relative flex flex-col items-center justify-center p-7 sm:p-8 rounded-3xl bg-white hover:bg-amber-50/50 text-stone-900 shadow-[0_14px_28px_rgba(0,0,0,0.06)] hover:shadow-[0_18px_36px_rgba(245,158,11,0.18)] transition-all duration-300 hover:-translate-y-1.5 active:translate-y-0 cursor-pointer min-h-[160px] text-center border-2 border-amber-200/80 hover:border-amber-400"
-          >
-            <div className="mb-2 transform group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-              <PixarMainDish className="w-14 h-14" />
-            </div>
+        {/* Canlı Günün Menüsü İçeriği */}
+        {!loading && !error && (
+          <div className="space-y-6">
+            {/* Üst Navigasyon Çubuğu: [Sol Ok] — [Tarih & Gün Bilgisi] — [Sağ Ok] */}
+            <div className="flex items-center justify-between gap-2 p-2.5 sm:p-3.5 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 rounded-2xl border border-amber-200 shadow-2xs">
+              {/* Önceki Gün Butonu (Sol Ok) */}
+              <button
+                type="button"
+                onClick={handlePrevDay}
+                disabled={currentIndex === 0}
+                className={`group flex items-center gap-1.5 px-3 sm:px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all select-none cursor-pointer ${
+                  currentIndex === 0
+                    ? 'opacity-35 cursor-not-allowed text-stone-400 bg-stone-100'
+                    : 'bg-white hover:bg-amber-500 hover:text-white text-stone-800 border border-amber-200 shadow-xs active:scale-95'
+                }`}
+                title="Önceki Gün (Klavye: Sol Ok)"
+              >
+                <span className="text-base sm:text-lg group-hover:-translate-x-0.5 transition-transform">&larr;</span>
+                <span className="hidden sm:inline">Önceki</span>
+              </button>
 
-            <span className="text-2xl sm:text-3xl font-black tracking-tight text-stone-900">
-              Aylık Liste
-            </span>
-            <span className="text-xs uppercase tracking-wider font-bold text-amber-700 mt-1 flex items-center gap-1">
-              <span>Aylık Yemek Takvimi</span>
-              <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
-            </span>
-          </button>
-        </div>
-      </section>
-
-      {/* 3D Pixar Tarzı Modern Menü Modalı */}
-      {activeModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-900/60 backdrop-blur-xs overflow-y-auto"
-          onClick={handleCloseModal}
-        >
-          <div
-            className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full border border-stone-200 text-stone-800 my-auto max-h-[92vh] flex flex-col overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="px-6 py-5 border-b border-stone-100 bg-amber-50/70 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-white border border-amber-200 shadow-xs flex items-center justify-center flex-shrink-0">
-                  {activeModal === 'daily' ? (
-                    <PixarSoup className="w-8 h-8" />
-                  ) : (
-                    <PixarMainDish className="w-8 h-8" />
+              {/* Merkez: Tarih, Gün ve Gün Sayacı */}
+              <div className="text-center flex-1 min-w-0 px-2">
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <h2 className="text-base sm:text-xl font-black text-stone-900 tracking-tight truncate">
+                    {currentEntry?.dateStr || 'Günün Menüsü'}
+                  </h2>
+                  {currentIndex === todayIndex && (
+                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider bg-emerald-500 text-white px-2.5 py-0.5 rounded-full shadow-2xs">
+                      Bugün
+                    </span>
                   )}
                 </div>
-                <div>
-                  <h3 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
-                    {activeModal === 'daily' ? 'Günün Öğle Yemeği Menüsü' : `${monthlyPlan?.monthName || 'Aylık'} Yemek Listesi`}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-stone-500 font-medium">
-                    {activeModal === 'daily'
-                      ? (todayLunch?.dateStr || 'Bugünün Özel Menüsü')
-                      : 'Tüm ayın öğle yemeği takvimi'}
-                  </p>
+
+                <div className="flex items-center justify-center gap-2 mt-0.5">
+                  <span className="text-[11px] font-bold text-amber-900/70">
+                    {entries.length > 0 ? `${currentIndex + 1} / ${entries.length} Gün` : ''}
+                  </span>
+                  {currentIndex !== todayIndex && (
+                    <button
+                      type="button"
+                      onClick={handleGoToToday}
+                      className="text-[11px] font-black text-amber-700 hover:text-amber-900 underline underline-offset-2 transition-colors cursor-pointer"
+                    >
+                      📍 Bugüne Dön
+                    </button>
+                  )}
                 </div>
               </div>
 
+              {/* Sonraki Gün Butonu (Sağ Ok) */}
               <button
                 type="button"
-                onClick={handleCloseModal}
-                className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white hover:bg-stone-100 border border-stone-200 text-stone-500 hover:text-stone-800 transition-colors cursor-pointer text-sm font-bold"
-                aria-label="Kapat"
+                onClick={handleNextDay}
+                disabled={currentIndex === entries.length - 1}
+                className={`group flex items-center gap-1.5 px-3 sm:px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all select-none cursor-pointer ${
+                  currentIndex === entries.length - 1
+                    ? 'opacity-35 cursor-not-allowed text-stone-400 bg-stone-100'
+                    : 'bg-white hover:bg-amber-500 hover:text-white text-stone-800 border border-amber-200 shadow-xs active:scale-95'
+                }`}
+                title="Sonraki Gün (Klavye: Sağ Ok)"
               >
-                ✕
+                <span className="hidden sm:inline">Sonraki</span>
+                <span className="text-base sm:text-lg group-hover:translate-x-0.5 transition-transform">&rarr;</span>
               </button>
             </div>
 
-
-
-            {/* Modal Body */}
-            <div className="p-5 sm:p-7 overflow-y-auto flex-1 space-y-5">
-              {loading && (
-                <div className="py-20 text-center text-stone-500 space-y-3">
-                  <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <p className="text-xs uppercase font-bold tracking-widest text-amber-800">
-                    Lezzetli Menü Yükleniyor...
-                  </p>
+            {/* Pazar Günü Uyarısı (Eğer o gün Pazar ise) */}
+            {isSundayToday && currentIndex === todayIndex ? (
+              <div className="p-10 text-center bg-amber-50/60 rounded-3xl border border-amber-200 space-y-3">
+                <div className="w-16 h-16 mx-auto bg-white rounded-2xl p-2 shadow-xs border border-amber-200">
+                  <PixarSalad className="w-full h-full" />
                 </div>
-              )}
+                <h4 className="text-xl font-black text-amber-950">Bugün Pazar</h4>
+                <p className="text-stone-600 font-semibold text-sm">
+                  Pazar günleri yemek hizmetimiz bulunmamaktadır.
+                </p>
+                <p className="text-xs text-stone-400">
+                  Sağ ve sol oklara basarak haftanın diğer günlerinin menülerini inceleyebilirsiniz.
+                </p>
+              </div>
+            ) : currentEntry ? (
+              <>
+                {/* İstatistik Çubuğu (Çeşit Sayısı ve Toplam Kalori) */}
+                {(() => {
+                  const currentDishes = parseDishes(currentEntry.items, currentEntry.mealText);
+                  const totalCalories = currentDishes.reduce(
+                    (sum, dish) => sum + getDishCalories(dish),
+                    0
+                  );
 
-              {error && (
-                <div className="p-4 bg-rose-50 text-rose-800 rounded-2xl border border-rose-200 text-sm font-semibold">
-                  {error}
-                </div>
-              )}
-
-              {/* 1. GÜNÜN MENÜSÜ GÖRÜNÜMÜ */}
-              {!loading && !error && activeModal === 'daily' && todayLunch && (
-                <div className="space-y-5">
-                  {todayLunch.isSunday ? (
-                    <div className="p-12 text-center bg-amber-50/60 rounded-3xl border border-amber-200 space-y-3">
-                      <div className="w-16 h-16 mx-auto bg-white rounded-2xl p-2 shadow-xs border border-amber-200">
-                        <PixarSalad className="w-full h-full" />
-                      </div>
-                      <h4 className="text-xl font-black text-amber-950">Bugün Pazar</h4>
-                      <p className="text-stone-600 font-semibold text-sm">
-                        {todayLunch.message || 'Pazar günleri yemek hizmetimiz bulunmamaktadır.'}
-                      </p>
-                      <p className="text-xs text-stone-400">Hafta içi ve Cumartesi günleri menümüz servis edilmektedir.</p>
-                    </div>
-                  ) : (
+                  return (
                     <>
-                      {/* Tarih ve Gün Başlığı & Yemek Kartları */}
-                      {(() => {
-                        const todayDishes = parseDishes(todayLunch.items, todayLunch.mealText);
-                        const totalCalories = todayDishes.reduce((sum, dish) => sum + getDishCalories(dish), 0);
-                        return (
-                          <>
-                            <div className="flex flex-wrap items-center justify-between gap-2 p-4 rounded-2xl bg-amber-50/80 border border-amber-200">
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg font-black text-amber-900">
-                                  📅 {todayLunch.dateStr}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-extrabold uppercase tracking-wider text-amber-800 bg-white px-3 py-1 rounded-xl border border-amber-200 shadow-2xs">
-                                  {todayDishes.length} Çeşit Yemek
-                                </span>
-                                <span className="text-xs font-black uppercase tracking-wider text-emerald-900 bg-emerald-100/90 px-3 py-1 rounded-xl border border-emerald-300 shadow-2xs flex items-center gap-1">
-                                  <span>🔥</span>
-                                  <span>Toplam: {totalCalories} kcal</span>
-                                </span>
-                              </div>
-                            </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-amber-50/50 border border-amber-100">
+                        <span className="text-xs font-black uppercase tracking-wider text-amber-900 bg-white px-3 py-1 rounded-lg border border-amber-200 shadow-2xs">
+                          🍴 {currentDishes.length} Çeşit Yemek
+                        </span>
+                        <span className="text-xs font-black uppercase tracking-wider text-emerald-950 bg-emerald-100 px-3 py-1 rounded-lg border border-emerald-300 shadow-2xs flex items-center gap-1.5">
+                          <span>🔥</span>
+                          <span>Toplam: {totalCalories} kcal</span>
+                        </span>
+                      </div>
 
-                            {/* 3D Pixar Yemek Kartları */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              {todayDishes.map((dish, idx) => {
-                                const cat = getDishCategory(dish);
-                                const meta = CATEGORY_META[cat];
-                                const calories = getDishCalories(dish);
-                                return (
-                                  <div
-                                    key={idx}
-                                    className={`p-4 rounded-2xl bg-white border border-stone-200 ${meta.cardBorder} hover:shadow-md transition-all flex items-center gap-4`}
+                      {/* 3D Pixar Yemek Kartları Izgarası */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
+                        {currentDishes.map((dish, idx) => {
+                          const cat = getDishCategory(dish);
+                          const meta = CATEGORY_META[cat];
+                          const calories = getDishCalories(dish);
+
+                          return (
+                            <div
+                              key={idx}
+                              className={`p-4 rounded-2xl bg-white border border-stone-200 ${meta.cardBorder} hover:shadow-md transition-all duration-200 flex items-center gap-3.5 group`}
+                            >
+                              <div
+                                className={`p-2.5 rounded-2xl border flex-shrink-0 transition-transform group-hover:scale-105 ${meta.iconBox}`}
+                              >
+                                {getPixarIconByCategory(cat)}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <span
+                                    className={`inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border shadow-2xs ${meta.badgeClass}`}
                                   >
-                                    <div className={`p-2.5 rounded-2xl border flex-shrink-0 ${meta.iconBox}`}>
-                                      {getPixarIconByCategory(cat)}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center justify-between gap-2 mb-1">
-                                        <span
-                                          className={`inline-block text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-md border shadow-2xs ${meta.badgeClass}`}
-                                        >
-                                          {meta.label}
-                                        </span>
-                                        <span className="text-xs font-black text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
-                                          <span>🔥</span>
-                                          <span>{calories} kcal</span>
-                                        </span>
-                                      </div>
-                                      <h4 className="font-black text-stone-900 text-sm sm:text-base leading-snug">
-                                        {dish}
-                                      </h4>
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                                    {meta.label}
+                                  </span>
+                                  <span className="text-xs font-black text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
+                                    <span>🔥</span>
+                                    <span>{calories} kcal</span>
+                                  </span>
+                                </div>
+                                <h3 className="font-black text-stone-900 text-sm sm:text-base leading-snug">
+                                  {dish}
+                                </h3>
+                              </div>
                             </div>
-                          </>
-                        );
-                      })()}
+                          );
+                        })}
+                      </div>
 
                       {/* Özet Menü Satırı */}
-                      <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 text-xs text-stone-600 font-medium flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div>
-                          <span className="font-bold text-stone-800">Menü Özeti: </span>
-                          {todayLunch.mealText}
+                      <div className="p-3.5 sm:p-4 bg-stone-50/80 rounded-2xl border border-stone-200 text-xs text-stone-600 font-medium flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="truncate">
+                          <span className="font-bold text-stone-800">Menü: </span>
+                          <span>{currentEntry.mealText}</span>
                         </div>
                         <div className="text-xs font-black text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 whitespace-nowrap self-start sm:self-auto">
                           Sağlıklı & Dengeli Tabldot Öğünü
                         </div>
                       </div>
                     </>
-                  )}
-                </div>
-              )}
+                  );
+                })()}
+              </>
+            ) : (
+              <div className="py-12 text-center text-stone-400 font-bold text-sm">
+                Seçilen gün için menü bulunamadı.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-              {/* 2. AYLIK LİSTE GÖRÜNÜMÜ (KULLANICI TABLOSU - PAZAR GÜNLERİ YOK) */}
-              {!loading && !error && activeModal === 'monthly' && monthlyPlan && (
-                <div className="space-y-4">
-                  {/* Arama ve Filtreleme */}
-                  <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-                    <div className="relative flex-1">
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Menüde veya günde ara... (örn: Çorba, Salı, Tavuk)"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-stone-200 text-xs sm:text-sm focus:outline-none focus:border-amber-500 bg-stone-50/50"
-                      />
-                      <span className="absolute left-3.5 top-2.5 text-stone-400 text-sm">🔍</span>
-                      {searchQuery && (
-                        <button
-                          type="button"
-                          onClick={() => setSearchQuery('')}
-                          className="absolute right-3 top-2.5 text-stone-400 hover:text-stone-700 text-xs"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                    <span className="text-xs font-bold text-stone-500 self-center">
-                      Toplam {filteredEntries.length} Gün
-                    </span>
-                  </div>
+      {/* 2. TÜM AYIN YEMEK LİSTESİ (AÇILIR-KAPANIR INLINE GÖRÜNÜM — POPOVER YOK!) */}
+      <div className="space-y-4">
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShowMonthlyList((prev) => !prev)}
+            className="group flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-white hover:bg-amber-50/70 text-stone-900 font-black text-sm border-2 border-amber-200 shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-95"
+          >
+            <span className="text-lg group-hover:scale-110 transition-transform">📅</span>
+            <span>
+              {showMonthlyList
+                ? 'Aylık Menü Takvimini Gizle'
+                : `Tüm ${monthlyPlan?.monthName || 'Ay'} Yemek Listesini Gör (${entries.length} Gün)`}
+            </span>
+            <span className="text-xs font-bold text-amber-600 bg-amber-100/80 px-2 py-0.5 rounded-md">
+              {showMonthlyList ? '▲ Gizle' : '▼ Aç'}
+            </span>
+          </button>
+        </div>
 
-                  {/* Kategori Renk Rehberi */}
-                  <div className="flex flex-wrap items-center gap-1.5 p-2.5 bg-stone-50 rounded-xl border border-stone-200/80 text-[11px] font-extrabold">
-                    <span className="text-stone-400 font-bold mr-1 text-[10px] uppercase tracking-wider">Kategoriler:</span>
-                    <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">🥣 Çorba</span>
-                    <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-950 border border-rose-300">🍲 Ana Yemek</span>
-                    <span className="px-2 py-0.5 rounded-md bg-orange-100 text-orange-950 border border-orange-300">🍚 Yan Yemek</span>
-                    <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-950 border border-emerald-300">🥗 Salata / Meze</span>
-                    <span className="px-2 py-0.5 rounded-md bg-purple-100 text-purple-950 border border-purple-300">🍮 Tatlı / Meyve</span>
-                    <span className="px-2 py-0.5 rounded-md bg-sky-100 text-sky-950 border border-sky-300">🥤 İçecek</span>
-                  </div>
+        {/* Açılır Aylık Tablo (Inline) */}
+        {showMonthlyList && (
+          <div className="bg-white rounded-3xl p-5 sm:p-7 border-2 border-amber-200 shadow-[0_12px_32px_rgba(0,0,0,0.06)] space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between border-b border-stone-100 pb-4">
+              <div>
+                <h3 className="text-lg sm:text-xl font-black text-stone-900">
+                  {monthlyPlan?.monthName || 'Aylık'} Yemek Takvimi
+                </h3>
+                <p className="text-xs text-stone-500 font-medium">
+                  Listedeki herhangi bir güne tıklayarak yukarıdaki günün menüsüne geçebilirsiniz.
+                </p>
+              </div>
 
-                  {/* Aylık Liste Tablosu */}
-                  <div className="border border-stone-200 rounded-2xl overflow-hidden shadow-2xs">
-                    <div className="overflow-x-auto max-h-[55vh]">
-                      <table className="w-full text-left border-collapse text-xs sm:text-sm">
-                        <thead className="sticky top-0 z-10 bg-amber-500 text-white font-black uppercase text-[11px] tracking-wider shadow-xs">
-                          <tr>
-                            <th className="py-3 px-4 border-r border-amber-400/60 w-36 sm:w-48 whitespace-nowrap">
-                              TARİH
-                            </th>
-                            <th className="py-3 px-4">
-                              ÖĞLE YEMEĞİ
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-stone-100 bg-white font-medium text-stone-800">
-                          {filteredEntries.map((entry) => {
-                            const now = new Date();
-                            const entryDate = new Date(entry.date);
-                            const isToday =
-                              (todayLunch?.id && entry.id === todayLunch.id) ||
-                              (!isNaN(entryDate.getTime()) &&
-                               entryDate.getDate() === now.getDate() &&
-                               entryDate.getMonth() === now.getMonth() &&
-                               entryDate.getFullYear() === now.getFullYear());
-                            const entryDishes = parseDishes(entry.items, entry.mealText);
-                            const dayTotalCalories = entryDishes.reduce((sum, d) => sum + getDishCalories(d), 0);
-
-                            return (
-                              <tr
-                                key={entry.id}
-                                className={`transition-colors hover:bg-amber-50/40 ${
-                                  isToday ? 'bg-amber-100/60 font-bold border-l-4 border-l-amber-500' : ''
-                                }`}
-                              >
-                                <td className="py-3 px-4 align-top font-bold text-stone-900 border-r border-stone-100 whitespace-nowrap">
-                                  <div className="flex flex-col gap-1">
-                                    <div className="flex items-center gap-1.5">
-                                      <span>{entry.dateStr}</span>
-                                      {isToday && (
-                                        <span className="text-[10px] bg-amber-500 text-white font-black px-1.5 py-0.5 rounded-md uppercase">
-                                          Bugün
-                                        </span>
-                                      )}
-                                    </div>
-                                    {dayTotalCalories > 0 && (
-                                      <span className="text-[10px] font-black text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md w-fit flex items-center gap-1">
-                                        <span>🔥</span>
-                                        <span>{dayTotalCalories} kcal</span>
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="py-3 px-4 align-top">
-                                  <div className="space-y-1.5">
-                                    <div className="text-stone-900 leading-relaxed font-semibold">
-                                      {entry.mealText}
-                                    </div>
-                                    <div className="flex flex-wrap gap-1.5 pt-0.5">
-                                      {entryDishes.map((item, i) => {
-                                        const cat = getDishCategory(item);
-                                        const meta = CATEGORY_META[cat];
-                                        const cal = getDishCalories(item);
-                                        return (
-                                          <span
-                                            key={i}
-                                            className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-0.5 rounded-md border shadow-2xs ${meta.badgeClass}`}
-                                          >
-                                            <span>{item}</span>
-                                            <span className="opacity-80 font-black">({cal} kcal)</span>
-                                          </span>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Hızlı Arama */}
+              <div className="relative min-w-[240px]">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Yemek veya gün ara..."
+                  className="w-full pl-9 pr-8 py-2 rounded-xl border border-stone-200 text-xs focus:outline-none focus:border-amber-500 bg-stone-50"
+                />
+                <span className="absolute left-3 top-2 text-stone-400 text-xs">🔍</span>
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-2 text-stone-400 hover:text-stone-700 text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-stone-100 bg-stone-50/70 flex flex-wrap items-center justify-between gap-3">
-              <span className="text-xs font-semibold text-stone-500 flex items-center gap-1.5">
-                <span>✨</span>
-                <span>Aylık Öğle Yemeği Menüsü</span>
-              </span>
+            {/* Tablo */}
+            <div className="overflow-x-auto rounded-2xl border border-stone-200">
+              <table className="w-full text-left text-xs sm:text-sm border-collapse">
+                <thead>
+                  <tr className="bg-amber-50/80 border-b border-amber-200 text-stone-800 font-extrabold uppercase text-[11px] tracking-wider">
+                    <th className="py-3 px-3.5 sm:px-4 w-36">Tarih & Gün</th>
+                    <th className="py-3 px-3.5 sm:px-4">Menüdeki Yemekler</th>
+                    <th className="py-3 px-3.5 sm:px-4 text-right w-28">Kalori</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {filteredEntries.map((entry) => {
+                    const originalIdx = entries.findIndex((e) => e.id === entry.id);
+                    const isSelected = originalIdx === currentIndex;
+                    const dishes = parseDishes(entry.items, entry.mealText);
+                    const totalCal = dishes.reduce((sum, d) => sum + getDishCalories(d), 0);
 
-              <button
-                type="button"
-                onClick={handleCloseModal}
-                className="px-6 py-2.5 rounded-2xl bg-stone-900 hover:bg-stone-800 text-white text-xs sm:text-sm font-bold transition-colors cursor-pointer"
-              >
-                Kapat
-              </button>
+                    return (
+                      <tr
+                        key={entry.id}
+                        onClick={() => handleSelectDay(originalIdx)}
+                        className={`cursor-pointer transition-colors ${
+                          isSelected
+                            ? 'bg-amber-100/70 hover:bg-amber-100 font-semibold'
+                            : 'hover:bg-amber-50/40'
+                        }`}
+                        title="Bu günün menüsünü yukarıda görüntülemek için tıklayın"
+                      >
+                        <td className="py-3 px-3.5 sm:px-4 align-top">
+                          <div className="font-black text-stone-900 flex items-center gap-1.5">
+                            {isSelected && <span className="text-amber-600">👉</span>}
+                            <span>{entry.dateStr}</span>
+                          </div>
+                          <div className="text-[11px] font-bold text-amber-700">
+                            {entry.dayName}
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-3.5 sm:px-4 align-top">
+                          <div className="flex flex-wrap gap-1.5">
+                            {dishes.map((dish, dIdx) => (
+                              <span
+                                key={dIdx}
+                                className="inline-block bg-white border border-stone-200 px-2 py-0.5 rounded-md text-xs font-semibold text-stone-800 shadow-2xs"
+                              >
+                                {dish}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-3.5 sm:px-4 text-right align-top whitespace-nowrap">
+                          <span className="inline-block font-black text-xs text-amber-900 bg-amber-100 px-2 py-1 rounded-md border border-amber-200 shadow-2xs">
+                            🔥 {totalCal} kcal
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {filteredEntries.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="py-8 text-center text-stone-400 font-bold text-xs">
+                        Aramanıza uygun gün bulunamadı.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-        </div>
-      )}
-    </>
+        )}
+      </div>
+    </section>
   );
 }
