@@ -19,10 +19,21 @@ export function normalizeVisualName(str: string): string {
 
 // Yaygın Türk mutfağı ve tabldot yemekleri için yüksek kaliteli görsel sözlüğü
 export const CURATED_DISH_IMAGES: Record<string, string> = {
-  // === ÇORBALAR ===
-  'mercimek corbasi': 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&auto=format&fit=crop&q=80',
-  'ezogelin corbasi': 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&auto=format&fit=crop&q=80',
-  'ezogelin corba': 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&auto=format&fit=crop&q=80',
+  // === GEMİNİ İLE ÜRETİLEN ÖZEL ARKA PLANSIZ GERÇEKÇİ TÜRK YEMEKLERİ ===
+  'mercimek corbasi': '/dishes/mercimek_corbasi.jpg',
+  'mercimek corba': '/dishes/mercimek_corbasi.jpg',
+  'kirmizi mercimek corbasi': '/dishes/mercimek_corbasi.jpg',
+  'suzen mercimek corbasi': '/dishes/mercimek_corbasi.jpg',
+  'mercimek': '/dishes/mercimek_corbasi.jpg',
+
+  'ezogelin corbasi': '/dishes/ezogelin_corbasi.jpg',
+  'ezogelin corba': '/dishes/ezogelin_corbasi.jpg',
+  'ezogelin': '/dishes/ezogelin_corbasi.jpg',
+
+  'firinda karniyarik': '/dishes/karniyarik.jpg',
+  'karniyarik': '/dishes/karniyarik.jpg',
+
+  // === DİĞER ÇORBALAR (Sade / Arka Plansız) ===
   'tarhana corbasi': 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&auto=format&fit=crop&q=80',
   'yayla corbasi': 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&auto=format&fit=crop&q=80',
   'sehriye corbasi': 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&auto=format&fit=crop&q=80',
@@ -31,8 +42,6 @@ export const CURATED_DISH_IMAGES: Record<string, string> = {
   'tandir corbasi': 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=600&auto=format&fit=crop&q=80',
 
   // === ANA YEMEKLER (ET & KEBAP & TAVUK) ===
-  'firinda karniyarik': 'https://images.unsplash.com/photo-1625944230945-1b7dd3b949ab?w=600&auto=format&fit=crop&q=80',
-  'karniyarik': 'https://images.unsplash.com/photo-1625944230945-1b7dd3b949ab?w=600&auto=format&fit=crop&q=80',
   'tavuk sote': 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=600&auto=format&fit=crop&q=80',
   'orman kebabi': 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80',
   'izgara kofte': 'https://images.unsplash.com/photo-1529042410759-befb1204b468?w=600&auto=format&fit=crop&q=80',
