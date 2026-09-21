@@ -666,12 +666,6 @@ export default function AdminYemeklerPage() {
                                   alt={m.name}
                                   className="w-12 h-12 object-cover rounded-xl border border-stone-200 shadow-2xs group-hover:scale-110 group-hover:border-amber-400 transition-all"
                                 />
-                                {hasCustomImage && (
-                                  <span
-                                    className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border border-white"
-                                    title="Özel Yüklenmiş Görsel"
-                                  />
-                                )}
                               </button>
                             ) : (
                               <div className="w-12 h-12 mx-auto rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-400 text-lg">
@@ -700,13 +694,8 @@ export default function AdminYemeklerPage() {
                                 />
                               </div>
                             ) : (
-                              <div className="font-black text-stone-900 text-sm flex items-center gap-1.5">
-                                <span>{m.name}</span>
-                                {hasCustomImage && (
-                                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                                    Özel Fotoğraf
-                                  </span>
-                                )}
+                              <div className="font-black text-stone-900 text-sm">
+                                {m.name}
                               </div>
                             )}
                           </td>
