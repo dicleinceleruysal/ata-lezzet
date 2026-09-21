@@ -230,6 +230,23 @@ function getPixarIconByCategory(cat: CategoryKey) {
   }
 }
 
+function CameraIcon({ className = 'w-3.5 h-3.5' }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+      <circle cx="12" cy="13" r="4" />
+    </svg>
+  );
+}
+
 const CATEGORY_META: Record<CategoryKey, { label: string; badgeClass: string; iconBox: string; cardBorder: string }> = {
   corba: {
     label: 'Çorba',
@@ -910,6 +927,9 @@ export default function MenuButtons() {
                                 <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-black tracking-wide">
                                   🔍 Büyüt
                                 </div>
+                                <div className="absolute bottom-1 right-1 w-5 h-5 rounded-md bg-amber-500/95 text-white flex items-center justify-center shadow-xs group-hover:opacity-0 transition-opacity">
+                                  <CameraIcon className="w-3 h-3" />
+                                </div>
                               </div>
                             ) : (
                               <div
@@ -1002,13 +1022,16 @@ export default function MenuButtons() {
               </div>
             </div>
 
-            {/* Açıklama & Hızlı Aksiyonlar (Noktalar Kaldırıldı) */}
+            {/* Açıklama & Hızlı Aksiyonlar */}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-stone-100">
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs font-semibold text-stone-500">
                 <span>Pazartesi – Cumartesi 6 Günlük Çalışma Takvimi</span>
                 <span className="text-stone-300">•</span>
-                <span className="inline-flex items-center gap-1">
-                  <span>📷</span> Fotoğraflı yemeklerin görselini büyütmek için tıklayabilirsiniz
+                <span className="inline-flex items-center gap-1.5 font-bold text-stone-700">
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded bg-amber-500 text-white shadow-2xs">
+                    <CameraIcon className="w-2.5 h-2.5" />
+                  </span>
+                  <span>Fotoğraf ikonu olan yemeklere tıklayarak görseli büyütebilirsiniz</span>
                 </span>
               </div>
 
@@ -1125,10 +1148,10 @@ export default function MenuButtons() {
                                           imageUrl: dishImg,
                                         });
                                       }}
-                                      className="text-[11px] opacity-75 hover:opacity-100 flex-shrink-0 hover:scale-125 transition-transform cursor-pointer ml-1"
-                                      title="Fotoğrafı büyüt"
+                                      className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-amber-500 hover:bg-amber-600 text-white shadow-xs hover:scale-115 active:scale-95 transition-all cursor-pointer flex-shrink-0 ml-1.5"
+                                      title="Yemek fotoğrafını büyüt"
                                     >
-                                      📷
+                                      <CameraIcon className="w-3.5 h-3.5" />
                                     </button>
                                   )}
                                 </div>
