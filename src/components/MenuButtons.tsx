@@ -269,6 +269,25 @@ const CATEGORY_META: Record<CategoryKey, { label: string; badgeClass: string; ic
   },
 };
 
+const CATEGORY_DOTS: Record<CategoryKey, string> = {
+  corba: 'bg-amber-500',
+  ana_yemek: 'bg-rose-500',
+  yan_yemek: 'bg-orange-500',
+  salata: 'bg-emerald-500',
+  tatli: 'bg-purple-500',
+  icecek: 'bg-sky-500',
+};
+
+const WEEKDAYS = [
+  { short: 'Pzt', full: 'Pazartesi', isWeekend: false },
+  { short: 'Sal', full: 'Salı', isWeekend: false },
+  { short: 'Çar', full: 'Çarşamba', isWeekend: false },
+  { short: 'Per', full: 'Perşembe', isWeekend: false },
+  { short: 'Cum', full: 'Cuma', isWeekend: false },
+  { short: 'Cmt', full: 'Cumartesi', isWeekend: false },
+  { short: 'Paz', full: 'Pazar', isWeekend: true },
+];
+
 function groupEntriesByWeek(entries: DailyMenuEntryData[]): WeekGroup[] {
   const weeks: WeekGroup[] = [];
   let currentWeek: DailyMenuEntryData[] = [];
@@ -454,6 +473,124 @@ export default function MenuButtons() {
   const weekGroups = useMemo(() => {
     return groupEntriesByWeek(entries);
   }, [entries]);
+
+  // Gün numarasına göre harita (1..31)
+  const entriesByDay = useMemo(() => {
+    const map = new Map<number, DailyMenuEntryData>();
+    entries.forEach((e) => {
+      let dayNum: number | null = null;
+      const dayFromStr = parseInt(e.dateStr.trim().split(' ')[0], 10);
+      if (!isNaN(dayFromStr) && dayFromStr > 0 && dayFromStr <= 31) {
+        dayNum = dayFromStr;
+      } else if (e.date) {
+        dayNum = new Date(e.date).getUTCDate();
+      }
+      if (dayNum) {
+        map.set(dayNum, e);
+      }
+    });
+    return map;
+  }, [entries]);
+
+  // 7 Günlük Aylık Takvim Izgarası Verisi
+  const calendarData = useMemo(() => {
+    if (!monthlyPlan) return { cells: [], totalDays: 0, year: 2026, month: 9, matchingCount: 0 };
+    const year = monthlyPlan.year || 2026;
+    const month = monthlyPlan.month || 9; // 1-indexed
+
+    // Ayın kaç gün çektiği
+    const totalDays = new Date(year, month, 0).getDate();
+
+    // Ayın ilk gününün haftanın hangi günü olduğu (0: Pazar, 1: Pazartesi, ...)
+    const firstDayObj = new Date(year, month - 1, 1);
+    // Pazartesi = 0 olacak şekilde dönüştür: (0=Pzt, 1=Sal, ..., 6=Paz)
+    const firstDayWeekday = (firstDayObj.getDay() + 6) % 7;
+
+    const now = new Date();
+    const currentDay = now.getDate();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+
+    type CalendarCell = {
+      type: 'day' | 'empty';
+      key: string;
+      dayNumber?: number;
+      dateObj?: Date;
+      isSunday?: boolean;
+      isToday?: boolean;
+      entry?: DailyMenuEntryData | null;
+      dishes?: string[];
+      totalCalories?: number;
+      matchesSearch?: boolean;
+    };
+
+    const cells: CalendarCell[] = [];
+
+    // Ayın ilk gününden önceki boş hücreler (Pzt hizalaması için)
+    for (let i = 0; i < firstDayWeekday; i++) {
+      cells.push({
+        type: 'empty',
+        key: `pad-pre-${i}`,
+      });
+    }
+
+    const q = searchQuery.trim().toLowerCase();
+    let matchingCount = 0;
+
+    // Ayın günleri
+    for (let d = 1; d <= totalDays; d++) {
+      const dateObj = new Date(year, month - 1, d);
+      const isSunday = dateObj.getDay() === 0;
+      const isToday = d === currentDay && month === currentMonth && year === currentYear;
+
+      const entry = entriesByDay.get(d) || null;
+      let dishes: string[] = [];
+      let totalCalories = 0;
+      if (entry) {
+        dishes = parseDishes(entry.items, entry.mealText);
+        totalCalories = dishes.reduce((sum, dish) => sum + getDishCalories(dish), 0);
+      }
+
+      let matchesSearch = true;
+      if (q) {
+        const matchName = entry?.dayName?.toLowerCase().includes(q);
+        const matchDate = entry?.dateStr?.toLowerCase().includes(q) || String(d) === q;
+        const matchMeals = dishes.some((dish) => dish.toLowerCase().includes(q));
+        matchesSearch = Boolean(matchName || matchDate || matchMeals);
+      }
+
+      if (matchesSearch && entry) {
+        matchingCount++;
+      }
+
+      cells.push({
+        type: 'day',
+        key: `day-${d}`,
+        dayNumber: d,
+        dateObj,
+        isSunday,
+        isToday,
+        entry,
+        dishes,
+        totalCalories,
+        matchesSearch,
+      });
+    }
+
+    // Son satırı 7'nin katına tamamlamak için son boş hücreler
+    const remainder = cells.length % 7;
+    if (remainder !== 0) {
+      const paddingNeeded = 7 - remainder;
+      for (let i = 0; i < paddingNeeded; i++) {
+        cells.push({
+          type: 'empty',
+          key: `pad-post-${i}`,
+        });
+      }
+    }
+
+    return { cells, totalDays, year, month, matchingCount };
+  }, [monthlyPlan, entriesByDay, getDishCalories, searchQuery]);
 
   // Klavye ok tuşları ile gün geçişi (Sol: Önceki, Sağ: Sonraki)
   useEffect(() => {
@@ -825,37 +962,38 @@ export default function MenuButtons() {
       )}
 
       {/* ============================================================ */}
-      {/* 2. GÖRÜNÜM: AYLIK TAKVİM (HAFTALIK DÜZENLİ KARTLAR — POPOVER YOK!) */}
+      {/* 2. GÖRÜNÜM: AYLIK TAKVİM (7 GÜNLÜK TAKVİM IZGARASI — POPOVER YOK!) */}
       {/* ============================================================ */}
       {!loading && !error && activeTab === 'monthly' && (
         <div className="space-y-6">
-          {/* Filtre ve Arama Alanı */}
+          {/* Takvim Üst Paneli: Başlık, Lejant ve Arama */}
           <div className="bg-white rounded-3xl p-5 sm:p-6 border-2 border-amber-200/90 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
               <div>
-                <h3 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight">
-                  {monthlyPlan?.monthName || 'Aylık'} Yemek Takvimi
+                <h3 className="text-lg sm:text-xl font-black text-stone-900 tracking-tight flex items-center gap-2">
+                  <span>📅</span>
+                  <span>{monthlyPlan?.monthName || 'Aylık'} {calendarData.year} Yemek Takvimi</span>
                 </h3>
-                <p className="text-xs text-stone-500 font-medium">
-                  Haftalık düzenlenmiş menü kartları. İncelemek istediğiniz güne tıklayarak günün menüsüne geçebilirsiniz.
+                <p className="text-xs text-stone-500 font-medium mt-0.5">
+                  İncelemek istediğiniz güne tıklayarak o günün detaylı menüsüne geçebilirsiniz.
                 </p>
               </div>
 
               {/* Hızlı Arama Kutusu */}
-              <div className="relative min-w-[240px]">
+              <div className="relative w-full sm:w-72">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Yemek veya gün ara..."
-                  className="w-full pl-9 pr-8 py-2 rounded-xl border border-stone-200 text-xs focus:outline-none focus:border-amber-500 bg-stone-50 font-medium"
+                  placeholder="Yemek veya gün ara (örn: Mercimek, Köfte)..."
+                  className="w-full pl-9 pr-8 py-2 rounded-xl border border-stone-200 text-xs focus:outline-none focus:border-amber-500 bg-stone-50 font-medium placeholder:text-stone-400"
                 />
                 <span className="absolute left-3 top-2 text-stone-400 text-xs">🔍</span>
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-2 text-stone-400 hover:text-stone-700 text-xs"
+                    className="absolute right-2.5 top-2 text-stone-400 hover:text-stone-700 text-xs cursor-pointer"
                   >
                     ✕
                   </button>
@@ -863,139 +1001,235 @@ export default function MenuButtons() {
               </div>
             </div>
 
-            {/* Hafta Filtre Hapları */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none">
+            {/* Lejant (Kategori Renk Kodları) & Hızlı Aksiyonlar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-stone-100">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] font-bold text-stone-600">
+                <span className="text-stone-400 text-[10px] uppercase font-black tracking-wider">Kategoriler:</span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" /> Çorba
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-rose-500" /> Ana Yemek
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-orange-500" /> Yan Yemek
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" /> Salata
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-purple-500" /> Tatlı
+                </span>
+                <span className="inline-flex items-center gap-1 text-stone-500">
+                  <span className="text-xs">📷</span> Fotoğraf
+                </span>
+              </div>
+
+              {/* Bugüne Git Butonu */}
               <button
                 type="button"
-                onClick={() => setSelectedWeekFilter('all')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
-                  selectedWeekFilter === 'all'
-                    ? 'bg-amber-500 text-white shadow-xs'
-                    : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
-                }`}
+                onClick={handleGoToToday}
+                className="text-xs font-black text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-xl border border-amber-200 transition-colors cursor-pointer ml-auto"
               >
-                Tüm Ay ({entries.length} Gün)
+                🍽️ Günün Menüsüne Git
               </button>
-
-              {weekGroups.map((wg) => (
-                <button
-                  key={wg.weekNumber}
-                  type="button"
-                  onClick={() => setSelectedWeekFilter(wg.weekNumber)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
-                    selectedWeekFilter === wg.weekNumber
-                      ? 'bg-amber-500 text-white shadow-xs'
-                      : 'bg-stone-100 hover:bg-stone-200 text-stone-700'
-                  }`}
-                >
-                  {wg.shortLabel}
-                </button>
-              ))}
             </div>
           </div>
 
-          {/* Haftalık Gruplanmış Kartlar */}
-          <div className="space-y-6">
-            {displayedWeekGroups.map((group) => (
-              <div key={group.weekNumber} className="space-y-3">
-                {/* Hafta Başlığı */}
-                <div className="flex items-center gap-3 px-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
-                  <h4 className="text-sm sm:text-base font-black text-stone-900 tracking-tight">
-                    {group.label}
-                  </h4>
-                  <span className="text-[11px] font-bold text-stone-500">
-                    ({group.entries.length} Gün)
-                  </span>
+          {/* 7 Günlük Takvim Izgarası */}
+          <div className="bg-white rounded-3xl p-4 sm:p-6 border-2 border-amber-200/90 shadow-sm space-y-4">
+            {/* Mobil Kaydırma İpucu */}
+            <div className="flex items-center justify-between text-xs text-stone-500 font-bold md:hidden px-1">
+              <span>👉 Takvimi sağa-sola kaydırabilirsiniz</span>
+              <span className="text-[11px] text-amber-600 font-extrabold">{monthlyPlan?.monthName} {calendarData.year}</span>
+            </div>
+
+            <div className="overflow-x-auto pb-2 scrollbar-thin">
+              <div className="min-w-[760px]">
+                {/* 7 Sütun Gün Başlıkları */}
+                <div className="grid grid-cols-7 gap-2 mb-2.5">
+                  {WEEKDAYS.map((w, idx) => (
+                    <div
+                      key={idx}
+                      className={`py-2 px-2 text-center rounded-xl font-black text-xs uppercase tracking-wider ${
+                        w.isWeekend
+                          ? 'bg-rose-50 text-rose-700 border border-rose-200/60'
+                          : 'bg-stone-100 text-stone-700 border border-stone-200/60'
+                      }`}
+                    >
+                      <span className="hidden sm:inline">{w.full}</span>
+                      <span className="sm:hidden">{w.short}</span>
+                    </div>
+                  ))}
                 </div>
 
-                {/* Gün Kartları Izgarası */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  {group.entries.map((entry) => {
-                    const originalIdx = entries.findIndex((e) => e.id === entry.id);
-                    const isToday = originalIdx === todayIndex;
-                    const dishes = parseDishes(entry.items, entry.mealText);
-                    const totalCal = dishes.reduce((sum, d) => sum + getDishCalories(d), 0);
+                {/* 7 Sütun Gün Hücreleri */}
+                <div className="grid grid-cols-7 gap-2">
+                  {calendarData.cells.map((cell) => {
+                    if (cell.type === 'empty') {
+                      return (
+                        <div
+                          key={cell.key}
+                          className="min-h-[145px] rounded-2xl bg-stone-50/40 border border-dashed border-stone-200/50"
+                        />
+                      );
+                    }
 
-                    return (
-                      <div
-                        key={entry.id}
-                        onClick={() => handleSelectDayFromMonthly(entry)}
-                        className={`p-4 sm:p-5 rounded-2xl bg-white border transition-all cursor-pointer hover:shadow-md flex flex-col justify-between gap-3 group ${
-                          isToday
-                            ? 'border-emerald-400 ring-2 ring-emerald-200 bg-emerald-50/20'
-                            : 'border-stone-200 hover:border-amber-300'
-                        }`}
-                        title="Bu günün menüsünü detaylı incelemek için tıklayın"
-                      >
-                        {/* Kart Başlığı: Tarih & Kalori Rozeti */}
-                        <div className="flex items-center justify-between gap-2 border-b border-stone-100 pb-2.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-black text-sm text-stone-900">
-                              {entry.dateStr}
+                    // Pazar Tatili Hücresi
+                    if (cell.isSunday) {
+                      return (
+                        <div
+                          key={cell.key}
+                          className="min-h-[145px] p-2.5 rounded-2xl bg-stone-50/70 border border-dashed border-stone-200 flex flex-col justify-between select-none"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-black text-stone-400">{cell.dayNumber}</span>
+                            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200/60">
+                              Tatil
                             </span>
-                            {isToday && (
-                              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500 text-white">
-                                Bugün
+                          </div>
+                          <div className="my-auto text-center py-2">
+                            <span className="text-2xl block mb-1">☕</span>
+                            <span className="text-[11px] font-black text-stone-600 block">Pazar Tatili</span>
+                            <span className="text-[10px] text-stone-400 font-medium">Hizmet Yok</span>
+                          </div>
+                          <div className="h-2" />
+                        </div>
+                      );
+                    }
+
+                    // Menüsü Olan Gün Hücresi
+                    if (cell.entry) {
+                      return (
+                        <div
+                          key={cell.key}
+                          onClick={() => handleSelectDayFromMonthly(cell.entry!)}
+                          className={`min-h-[145px] p-2.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group hover:shadow-lg hover:-translate-y-0.5 ${
+                            cell.isToday
+                              ? 'bg-emerald-50/40 border-emerald-400 ring-2 ring-emerald-300 shadow-sm'
+                              : cell.matchesSearch
+                              ? 'bg-white border-stone-200 hover:border-amber-400'
+                              : 'bg-stone-50/60 border-stone-150 opacity-30 hover:opacity-100'
+                          }`}
+                          title={`${cell.entry.dateStr} menüsünü detaylı incelemek için tıklayın`}
+                        >
+                          {/* Gün Başlığı: Gün Numarası & Kalori */}
+                          <div className="flex items-center justify-between gap-1 border-b border-stone-100 pb-1.5 mb-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`text-sm font-black ${
+                                  cell.isToday
+                                    ? 'text-emerald-700'
+                                    : 'text-stone-900 group-hover:text-amber-600'
+                                }`}
+                              >
+                                {cell.dayNumber}
                               </span>
+                              {cell.isToday && (
+                                <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-emerald-600 text-white animate-pulse">
+                                  Bugün
+                                </span>
+                              )}
+                            </div>
+                            {cell.totalCalories && cell.totalCalories > 0 ? (
+                              <span className="text-[10px] font-black text-amber-900 bg-amber-100/80 px-1.5 py-0.5 rounded border border-amber-200/80 whitespace-nowrap">
+                                {cell.totalCalories} kcal
+                              </span>
+                            ) : null}
+                          </div>
+
+                          {/* Yemekler Listesi (Renk Noktaları & Fotoğraf Simgesi) */}
+                          <div className="space-y-1 flex-1">
+                            {cell.dishes?.slice(0, 4).map((dish, dIdx) => {
+                              const cat = getDishCategory(dish);
+                              const dotColor = CATEGORY_DOTS[cat] || 'bg-stone-400';
+                              const norm = normalizeFoodText(dish);
+                              const dishImg = getDishImageUrl(dish, cat, dbImagesMap[norm]);
+
+                              return (
+                                <div
+                                  key={dIdx}
+                                  className="flex items-center gap-1.5 text-[11px] leading-tight font-bold text-stone-700 group-hover:text-stone-950 transition-colors"
+                                >
+                                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
+                                  <span className="truncate flex-1" title={dish}>
+                                    {dish}
+                                  </span>
+                                  {dishImg && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedFoodModal({
+                                          name: dish,
+                                          category: cat,
+                                          calories: getDishCalories(dish),
+                                          imageUrl: dishImg,
+                                        });
+                                      }}
+                                      className="text-[10px] opacity-75 hover:opacity-100 flex-shrink-0 hover:scale-125 transition-transform cursor-pointer"
+                                      title="Fotoğrafı büyüt"
+                                    >
+                                      📷
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                            {cell.dishes && cell.dishes.length > 4 && (
+                              <div className="text-[10px] font-extrabold text-stone-400 pl-3">
+                                +{cell.dishes.length - 4} yemek daha
+                              </div>
                             )}
                           </div>
-                          <span className="text-xs font-black text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-md border border-amber-200 shadow-2xs whitespace-nowrap">
-                            🔥 {totalCal} kcal
-                          </span>
-                        </div>
 
-                        {/* Yemekler Listesi (Fotoğraf İnceleme Özellikli Rozetler) */}
-                        <div className="flex flex-wrap gap-1.5 flex-1">
-                          {dishes.map((dish, dIdx) => {
-                            const cat = getDishCategory(dish);
-                            const meta = CATEGORY_META[cat];
-                            const cal = getDishCalories(dish);
-                            const norm = normalizeFoodText(dish);
-                            const dishImg = getDishImageUrl(dish, cat, dbImagesMap[norm]);
-
-                            return (
-                              <button
-                                key={dIdx}
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (dishImg) {
-                                    setSelectedFoodModal({
-                                      name: dish,
-                                      category: cat,
-                                      calories: cal,
-                                      imageUrl: dishImg,
-                                    });
-                                  }
-                                }}
-                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-2xs hover:scale-105 transition-transform cursor-pointer ${meta.badgeClass}`}
-                                title={dishImg ? 'Fotoğrafı görmek için tıklayın' : undefined}
-                              >
-                                {dishImg && <span className="text-[10px]">📷</span>}
-                                <span>{dish}</span>
-                              </button>
-                            );
-                          })}
+                          {/* Alt İpucu: Günün Menüsünde Aç */}
+                          <div className="flex items-center justify-between pt-1 mt-1 border-t border-stone-100/70 text-[9px] font-black">
+                            <span className="text-stone-400 truncate max-w-[80px]">
+                              {cell.entry.dayName}
+                            </span>
+                            <span className="text-amber-700 group-hover:text-amber-900 group-hover:translate-x-0.5 transition-all flex items-center gap-0.5">
+                              <span>İncele</span>
+                              <span>&rarr;</span>
+                            </span>
+                          </div>
                         </div>
+                      );
+                    }
 
-                        {/* Alt Buton: Günün Menüsüne Git */}
-                        <div className="flex items-center justify-end pt-1">
-                          <span className="text-[11px] font-black text-amber-700 group-hover:text-amber-900 group-hover:translate-x-0.5 transition-all flex items-center gap-1">
-                            <span>Günün Menüsünde Aç</span>
-                            <span>&rarr;</span>
-                          </span>
+                    // Hafta İçi Menü Planlanmamış Gün
+                    return (
+                      <div
+                        key={cell.key}
+                        className="min-h-[145px] p-2.5 rounded-2xl bg-stone-50/50 border border-stone-200/60 flex flex-col justify-between"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-black text-stone-400">{cell.dayNumber}</span>
                         </div>
+                        <div className="my-auto text-center py-2 text-stone-400 text-xs font-semibold">
+                          Plan Yok
+                        </div>
+                        <div className="h-2" />
                       </div>
                     );
                   })}
                 </div>
               </div>
-            ))}
+            </div>
 
-            {displayedWeekGroups.length === 0 && (
-              <div className="p-12 text-center bg-white rounded-3xl border border-stone-200 text-stone-400 font-bold text-sm">
-                Aramanıza uygun yemek veya gün bulunamadı.
+            {/* Arama Sonucu Bildirimi (Arama varsa) */}
+            {searchQuery.trim() && (
+              <div className="flex items-center justify-between px-3 py-2 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 font-bold">
+                <span>
+                  🔍 &quot;{searchQuery}&quot; araması için {calendarData.matchingCount} gün bulundu. Eşleşen günler normal, diğerleri soluk gösterilmektedir.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="text-amber-800 underline hover:text-amber-950 cursor-pointer ml-2"
+                >
+                  Filtreyi Temizle
+                </button>
               </div>
             )}
           </div>
