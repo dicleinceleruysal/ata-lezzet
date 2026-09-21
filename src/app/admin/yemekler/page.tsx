@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { getMealCalories } from '@/lib/mealCalories';
-import { getDishVisualInfo } from '@/lib/dishVisuals';
+import { getDishImageUrl } from '@/lib/dishVisuals';
 
 interface MealItem {
   id: string;
@@ -10,7 +10,6 @@ interface MealItem {
   category: string;
   calories?: number | null;
   imageUrl?: string | null;
-  description?: string | null;
   createdAt: string;
 }
 
@@ -92,7 +91,6 @@ export default function AdminYemeklerPage() {
     category: 'corba',
     calories: '',
     imageUrl: '',
-    description: '',
   });
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -107,14 +105,12 @@ export default function AdminYemeklerPage() {
   const [editCategory, setEditCategory] = useState('');
   const [editCalories, setEditCalories] = useState<string>('');
   const [editImageUrl, setEditImageUrl] = useState('');
-  const [editDescription, setEditDescription] = useState('');
 
   // Görsel Büyük Önizleme Modalı
   const [previewModalImage, setPreviewModalImage] = useState<{
     url: string;
     title: string;
     category: string;
-    description?: string;
   } | null>(null);
 
   const fetchMeals = async () => {
@@ -203,14 +199,13 @@ export default function AdminYemeklerPage() {
           category: formData.category,
           calories: cal,
           imageUrl: formData.imageUrl.trim() || null,
-          description: formData.description.trim() || null,
         }),
       });
 
       if (!res.ok) throw new Error('Yemek eklenemedi.');
 
       setFeedback({ type: 'success', text: `"${formData.name}" (${cal} kcal) görseliyle birlikte başarıyla eklendi!` });
-      setFormData({ name: '', category: 'corba', calories: '', imageUrl: '', description: '' });
+      setFormData({ name: '', category: 'corba', calories: '', imageUrl: '' });
       setFormOpen(false);
       fetchMeals();
     } catch (err: unknown) {
@@ -227,7 +222,6 @@ export default function AdminYemeklerPage() {
     setEditCategory(meal.category);
     setEditCalories(meal.calories !== null && meal.calories !== undefined ? String(meal.calories) : String(getMealCalories(meal.name, meal.category)));
     setEditImageUrl(meal.imageUrl || '');
-    setEditDescription(meal.description || '');
   };
 
   // Düzenlemeyi İptal Et
@@ -237,7 +231,6 @@ export default function AdminYemeklerPage() {
     setEditCategory('');
     setEditCalories('');
     setEditImageUrl('');
-    setEditDescription('');
   };
 
   // Düzenleme sırasında isim değiştiğinde otomatik kategori tespiti
@@ -275,7 +268,6 @@ export default function AdminYemeklerPage() {
           category: editCategory,
           calories: cal,
           imageUrl: editImageUrl.trim() || null,
-          description: editDescription.trim() || null,
         }),
       });
 
@@ -524,23 +516,6 @@ export default function AdminYemeklerPage() {
               )}
             </div>
 
-            {/* Yemek Açıklaması (Opsiyonel - ne olduğunu bilmeyenler için) */}
-            <div>
-              <label className="block text-xs font-extrabold uppercase tracking-wider text-stone-700 mb-1">
-                Yemek Açıklaması / İçeriği (Opsiyonel)
-              </label>
-              <textarea
-                rows={2}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Örn: Küp doğranmış tavuk göğsü, renkli biberler ve domates sosu ile sotelenmiş..."
-                className="w-full text-xs sm:text-sm p-3 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-stone-50/50 resize-none"
-              />
-              <p className="text-[11px] text-stone-400 mt-1">
-                💡 Yemeğin isminden ne olduğunu bilmeyen kullanıcılar ekranda bu açıklamayı görebilecektir.
-              </p>
-            </div>
-
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
@@ -624,7 +599,7 @@ export default function AdminYemeklerPage() {
                       const currentCal = m.calories !== null && m.calories !== undefined ? m.calories : getMealCalories(m.name, m.category);
                       
                       // Yemek görseli bilgisi (özel veya kütüphane desteği)
-                      const visual = getDishVisualInfo(m.name, m.category, m.imageUrl, m.description);
+                      const dishImageUrl = m.imageUrl || getDishImageUrl(m.name, m.category);
                       const hasCustomImage = Boolean(m.imageUrl);
 
                       return (
@@ -673,22 +648,21 @@ export default function AdminYemeklerPage() {
                                   {editImageUrl ? 'Değiştir' : '+ Yükle'}
                                 </button>
                               </div>
-                            ) : visual.imageUrl ? (
+                            ) : dishImageUrl ? (
                               <button
                                 type="button"
                                 onClick={() =>
                                   setPreviewModalImage({
-                                    url: visual.imageUrl!,
+                                    url: dishImageUrl,
                                     title: m.name,
                                     category: CATEGORY_NAMES[m.category] || m.category,
-                                    description: m.description || visual.description,
                                   })
                                 }
                                 className="relative group cursor-pointer block mx-auto"
-                                title="Büyütmek ve detayını görmek için tıklayın"
+                                title="Büyütmek için tıklayın"
                               >
                                 <img
-                                  src={visual.imageUrl}
+                                  src={dishImageUrl}
                                   alt={m.name}
                                   className="w-12 h-12 object-cover rounded-xl border border-stone-200 shadow-2xs group-hover:scale-110 group-hover:border-amber-400 transition-all"
                                 />
@@ -706,7 +680,7 @@ export default function AdminYemeklerPage() {
                             )}
                           </td>
 
-                          {/* Yemek Adı & Açıklama */}
+                          {/* Yemek Adı */}
                           <td className="px-5 py-3.5 align-middle">
                             {isEditing ? (
                               <div className="space-y-1.5">
@@ -724,33 +698,15 @@ export default function AdminYemeklerPage() {
                                   placeholder="Görsel URL linki (https://...)"
                                   className="w-full px-2.5 py-1 text-[11px] rounded-lg border border-stone-200 focus:outline-none bg-white"
                                 />
-                                <textarea
-                                  rows={1}
-                                  value={editDescription}
-                                  onChange={(e) => setEditDescription(e.target.value)}
-                                  placeholder="Yemek açıklaması / malzemeler..."
-                                  className="w-full px-2.5 py-1 text-[11px] rounded-lg border border-stone-200 focus:outline-none bg-white resize-none"
-                                />
                               </div>
                             ) : (
-                              <div>
-                                <div className="font-black text-stone-900 text-sm flex items-center gap-1.5">
-                                  <span>{m.name}</span>
-                                  {hasCustomImage && (
-                                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                                      Özel Fotoğraf
-                                    </span>
-                                  )}
-                                </div>
-                                {m.description ? (
-                                  <p className="text-[11px] text-stone-500 line-clamp-1 mt-0.5">
-                                    {m.description}
-                                  </p>
-                                ) : visual.description ? (
-                                  <p className="text-[11px] text-stone-400 line-clamp-1 mt-0.5 italic">
-                                    {visual.description}
-                                  </p>
-                                ) : null}
+                              <div className="font-black text-stone-900 text-sm flex items-center gap-1.5">
+                                <span>{m.name}</span>
+                                {hasCustomImage && (
+                                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                    Özel Fotoğraf
+                                  </span>
+                                )}
                               </div>
                             )}
                           </td>
@@ -938,11 +894,6 @@ export default function AdminYemeklerPage() {
               <h3 className="text-xl font-black text-stone-900">
                 {previewModalImage.title}
               </h3>
-              {previewModalImage.description && (
-                <p className="text-xs sm:text-sm text-stone-600 leading-relaxed bg-stone-50 p-3 rounded-xl border border-stone-100">
-                  {previewModalImage.description}
-                </p>
-              )}
               <div className="pt-2">
                 <button
                   type="button"
