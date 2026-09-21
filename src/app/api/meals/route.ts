@@ -20,7 +20,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, category, calories } = body;
+    const { name, category, calories, imageUrl, description } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -47,11 +47,16 @@ export async function POST(request: Request) {
       ? Number(calories)
       : getMealCalories(trimmedName, finalCategory);
 
+    const trimmedImageUrl = typeof imageUrl === 'string' ? imageUrl.trim() : null;
+    const trimmedDescription = typeof description === 'string' ? description.trim() : null;
+
     const newMeal = await prisma.meal.create({
       data: {
         name: trimmedName,
         category: finalCategory,
         calories: finalCalories,
+        imageUrl: trimmedImageUrl || null,
+        description: trimmedDescription || null,
         isActive: true,
       },
     });
@@ -73,7 +78,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, name, category, calories } = body;
+    const { id, name, category, calories, imageUrl, description } = body;
 
     if (!id || !name) {
       return NextResponse.json(
@@ -100,13 +105,23 @@ export async function PUT(request: Request) {
       ? Number(calories)
       : getMealCalories(trimmedName, finalCategory);
 
+    const dataToUpdate: Record<string, unknown> = {
+      name: trimmedName,
+      category: finalCategory,
+      calories: finalCalories,
+    };
+
+    if (imageUrl !== undefined) {
+      dataToUpdate.imageUrl = typeof imageUrl === 'string' && imageUrl.trim() ? imageUrl.trim() : null;
+    }
+
+    if (description !== undefined) {
+      dataToUpdate.description = typeof description === 'string' && description.trim() ? description.trim() : null;
+    }
+
     const updatedMeal = await prisma.meal.update({
       where: { id },
-      data: {
-        name: trimmedName,
-        category: finalCategory,
-        calories: finalCalories,
-      },
+      data: dataToUpdate,
     });
 
     return NextResponse.json({

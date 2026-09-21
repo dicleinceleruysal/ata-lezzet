@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getMealCalories } from '@/lib/mealCalories';
+import { getDishVisualInfo } from '@/lib/dishVisuals';
 
 interface MealItem {
   id: string;
   name: string;
   category: string;
   calories?: number | null;
+  imageUrl?: string | null;
+  description?: string | null;
   createdAt: string;
 }
 
@@ -31,6 +34,51 @@ const CATEGORY_COLORS: Record<string, string> = {
   icecek: 'bg-sky-100 text-sky-950 border-sky-300',
 };
 
+// Cihazdan yüklenen görseli otomatik olarak canvas üzerinde boyutlandırıp sıkıştıran yardımcı
+function compressAndResizeImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 640;
+        const MAX_HEIGHT = 480;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        // Optimize JPEG data URL (yaklaşık 25-45 KB)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error('Görsel işlenemedi.'));
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('Dosya okunamadı.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function AdminYemeklerPage() {
   const [meals, setMeals] = useState<MealItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,15 +91,31 @@ export default function AdminYemeklerPage() {
     name: '',
     category: 'corba',
     calories: '',
+    imageUrl: '',
+    description: '',
   });
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Dosya yükleme input ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   // Satır Düzenleme State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [editCalories, setEditCalories] = useState<string>('');
+  const [editImageUrl, setEditImageUrl] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+
+  // Görsel Büyük Önizleme Modalı
+  const [previewModalImage, setPreviewModalImage] = useState<{
+    url: string;
+    title: string;
+    category: string;
+    description?: string;
+  } | null>(null);
 
   const fetchMeals = async () => {
     setLoading(true);
@@ -98,6 +162,30 @@ export default function AdminYemeklerPage() {
     }));
   };
 
+  // Yeni yemek için dosya seçildiğinde
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await compressAndResizeImage(file);
+      setFormData((prev) => ({ ...prev, imageUrl: compressed }));
+    } catch {
+      setFeedback({ type: 'error', text: 'Görsel yüklenirken bir sorun oluştu.' });
+    }
+  };
+
+  // Düzenleme modunda dosya seçildiğinde
+  const handleEditFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await compressAndResizeImage(file);
+      setEditImageUrl(compressed);
+    } catch {
+      setFeedback({ type: 'error', text: 'Görsel yüklenirken bir sorun oluştu.' });
+    }
+  };
+
   const handleAddMeal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
@@ -111,16 +199,18 @@ export default function AdminYemeklerPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.name,
+          name: formData.name.trim(),
           category: formData.category,
           calories: cal,
+          imageUrl: formData.imageUrl.trim() || null,
+          description: formData.description.trim() || null,
         }),
       });
 
       if (!res.ok) throw new Error('Yemek eklenemedi.');
 
-      setFeedback({ type: 'success', text: `"${formData.name}" (${cal} kcal) başarıyla veritabanına eklendi!` });
-      setFormData({ name: '', category: 'corba', calories: '' });
+      setFeedback({ type: 'success', text: `"${formData.name}" (${cal} kcal) görseliyle birlikte başarıyla eklendi!` });
+      setFormData({ name: '', category: 'corba', calories: '', imageUrl: '', description: '' });
       setFormOpen(false);
       fetchMeals();
     } catch (err: unknown) {
@@ -136,6 +226,8 @@ export default function AdminYemeklerPage() {
     setEditName(meal.name);
     setEditCategory(meal.category);
     setEditCalories(meal.calories !== null && meal.calories !== undefined ? String(meal.calories) : String(getMealCalories(meal.name, meal.category)));
+    setEditImageUrl(meal.imageUrl || '');
+    setEditDescription(meal.description || '');
   };
 
   // Düzenlemeyi İptal Et
@@ -144,6 +236,8 @@ export default function AdminYemeklerPage() {
     setEditName('');
     setEditCategory('');
     setEditCalories('');
+    setEditImageUrl('');
+    setEditDescription('');
   };
 
   // Düzenleme sırasında isim değiştiğinde otomatik kategori tespiti
@@ -180,6 +274,8 @@ export default function AdminYemeklerPage() {
           name: editName.trim(),
           category: editCategory,
           calories: cal,
+          imageUrl: editImageUrl.trim() || null,
+          description: editDescription.trim() || null,
         }),
       });
 
@@ -227,7 +323,7 @@ export default function AdminYemeklerPage() {
     );
   });
 
-  // Sayfalama (Pagination) Hesaplamaları - Her sayfada 25 yemek
+  // Sayfalama (Pagination)
   const totalItems = filteredMeals.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
   const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
@@ -242,19 +338,29 @@ export default function AdminYemeklerPage() {
         <div>
           <h1 className="text-2xl font-black text-stone-900 tracking-tight flex items-center gap-2">
             <span>🍲</span>
-            <span>Yemek Yönetimi</span>
+            <span>Yemek & Görsel Yönetimi</span>
           </h1>
           <p className="text-sm text-stone-500 mt-1">
-            Veritabanındaki yemekleri doğrudan düzenleyin, yeni yemek ekleyin veya silin.
+            Yemeklerin fotoğraflarını yükleyin veya güncelleyin. Fotoğrafı olmayan yemekler için otomatik görsel ve açıklama desteği devrededir.
           </p>
         </div>
 
         <button
           type="button"
           onClick={() => setFormOpen(!formOpen)}
-          className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-black rounded-xl transition-all cursor-pointer shadow-xs"
+          className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-black rounded-xl transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
         >
-          {formOpen ? '✕ Formu Kapat' : '+ Yeni Yemek Ekle'}
+          {formOpen ? (
+            <>
+              <span>✕</span>
+              <span>Formu Kapat</span>
+            </>
+          ) : (
+            <>
+              <span>+</span>
+              <span>Yeni Yemek & Görsel Ekle</span>
+            </>
+          )}
         </button>
       </div>
 
@@ -271,19 +377,28 @@ export default function AdminYemeklerPage() {
           <button
             type="button"
             onClick={() => setFeedback(null)}
-            className="text-xs opacity-70 hover:opacity-100 font-bold ml-4"
+            className="text-xs opacity-70 hover:opacity-100 font-bold ml-4 cursor-pointer"
           >
             ✕
           </button>
         </div>
       )}
 
-      {/* Yeni Yemek Ekleme Formu (Açıklama ve Kalori kaldırıldı) */}
+      {/* Yeni Yemek & Görsel Ekleme Formu */}
       {formOpen && (
-        <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
-          <h3 className="text-lg font-black text-stone-900">Yeni Yemek Ekle</h3>
+        <div className="bg-white p-6 rounded-2xl border-2 border-amber-300 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-black text-stone-900 flex items-center gap-2">
+              <span>✨</span>
+              <span>Yeni Yemek & Görsel Ekle</span>
+            </h3>
+            <span className="text-xs text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 font-bold">
+              Fotoğraflı Yemek Kaydı
+            </span>
+          </div>
+
           <form onSubmit={handleAddMeal} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-extrabold uppercase tracking-wider text-stone-700 mb-1">
                   Yemek Adı *
@@ -293,7 +408,7 @@ export default function AdminYemeklerPage() {
                   required
                   value={formData.name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="Örn: Kıymalı Börek, Pirinç Pilavı, Makarna..."
+                  placeholder="Örn: Orman Kebabı, Fırında Karnıyarık..."
                   className="w-full text-sm p-3 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-stone-50/50"
                 />
               </div>
@@ -336,18 +451,104 @@ export default function AdminYemeklerPage() {
                   className="w-full text-sm p-3 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-stone-50/50 font-bold"
                 />
                 <p className="text-[11px] text-stone-400 font-semibold mt-1">
-                  🔥 Boş bırakılırsa standart kurumsal tabldot kalori referansından otomatik hesaplanır.
+                  🔥 Boş bırakılırsa standart tabldot kalori referansından otomatik atanır.
                 </p>
               </div>
+            </div>
+
+            {/* Yemek Görseli Ekleme Bölümü */}
+            <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 space-y-3">
+              <label className="block text-xs font-extrabold uppercase tracking-wider text-stone-700">
+                📸 Yemek Görseli (Fotoğraf Yükle veya Bağlantı Yapıştır)
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                {/* 1. Cihazdan Dosya Seç */}
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full py-2.5 px-4 bg-white hover:bg-amber-50 text-stone-800 border border-stone-300 hover:border-amber-400 rounded-xl text-xs font-black transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                  >
+                    <span>📁</span>
+                    <span>Bilgisayardan / Telefondan Fotoğraf Seç</span>
+                  </button>
+                  <p className="text-[10px] text-stone-400 mt-1">
+                    Otomatik olarak optimize edilir ve veritabanına güvenle işlenir.
+                  </p>
+                </div>
+
+                {/* 2. Web URL Yapıştır */}
+                <div>
+                  <input
+                    type="url"
+                    value={formData.imageUrl.startsWith('data:') ? '' : formData.imageUrl}
+                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                    placeholder="Veya görsel linki yapıştırın (https://...)"
+                    className="w-full text-xs p-2.5 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Canlı Görsel Önizleme */}
+              {formData.imageUrl && (
+                <div className="flex items-center gap-4 p-3 bg-white rounded-xl border border-amber-200">
+                  <img
+                    src={formData.imageUrl}
+                    alt="Yemek Önizleme"
+                    className="w-16 h-16 object-cover rounded-xl border border-amber-300 shadow-2xs"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-stone-800 truncate">
+                      Görsel başarıyla yüklendi / tanımlandı
+                    </p>
+                    <p className="text-[10px] text-emerald-700 font-semibold mt-0.5">
+                      ✓ Menü ekranında bu yemek için bu fotoğraf gösterilecek.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, imageUrl: '' })}
+                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                  >
+                    ✕ Görseli Kaldır
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Yemek Açıklaması (Opsiyonel - ne olduğunu bilmeyenler için) */}
+            <div>
+              <label className="block text-xs font-extrabold uppercase tracking-wider text-stone-700 mb-1">
+                Yemek Açıklaması / İçeriği (Opsiyonel)
+              </label>
+              <textarea
+                rows={2}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Örn: Küp doğranmış tavuk göğsü, renkli biberler ve domates sosu ile sotelenmiş..."
+                className="w-full text-xs sm:text-sm p-3 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-stone-50/50 resize-none"
+              />
+              <p className="text-[11px] text-stone-400 mt-1">
+                💡 Yemeğin isminden ne olduğunu bilmeyen kullanıcılar ekranda bu açıklamayı görebilecektir.
+              </p>
             </div>
 
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black rounded-xl transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black rounded-xl transition-colors cursor-pointer shadow-xs disabled:opacity-50 flex items-center gap-1.5"
               >
-                {saving ? 'Ekleniyor...' : '💾 Veritabanına Kaydet'}
+                <span>💾</span>
+                <span>{saving ? 'Kaydediliyor...' : 'Yemeği Veritabanına Kaydet'}</span>
               </button>
             </div>
           </form>
@@ -366,7 +567,7 @@ export default function AdminYemeklerPage() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              placeholder="Yemek adı veya kategori ara... (örn: Pilav, Çorba)"
+              placeholder="Yemek adı veya kategori ara... (örn: Pilav, Çorba, Kebab)"
               className="w-full pl-10 pr-4 py-2 rounded-xl border border-stone-200 text-xs sm:text-sm focus:outline-none focus:border-amber-500 bg-stone-50"
             />
             <span className="absolute left-3.5 top-2.5 text-stone-400 text-xs">🔍</span>
@@ -377,7 +578,7 @@ export default function AdminYemeklerPage() {
                   setSearchQuery('');
                   setCurrentPage(1);
                 }}
-                className="absolute right-3 top-2.5 text-stone-400 hover:text-stone-700 text-xs"
+                className="absolute right-3 top-2.5 text-stone-400 hover:text-stone-700 text-xs cursor-pointer"
               >
                 ✕
               </button>
@@ -407,10 +608,11 @@ export default function AdminYemeklerPage() {
                 <table className="w-full text-left text-xs sm:text-sm text-stone-700 border-collapse">
                   <thead className="sticky top-0 z-10 bg-stone-100 text-[11px] uppercase text-stone-700 font-black tracking-wider border-b border-stone-200">
                     <tr>
-                      <th className="px-5 py-3.5 w-14 text-center">#</th>
+                      <th className="px-3 py-3.5 w-12 text-center">#</th>
+                      <th className="px-4 py-3.5 w-20 text-center">GÖRSEL</th>
                       <th className="px-5 py-3.5">YEMEK ADI</th>
-                      <th className="px-5 py-3.5 w-60">KATEGORİ</th>
-                      <th className="px-5 py-3.5 w-32 text-center">KALORİ</th>
+                      <th className="px-5 py-3.5 w-56">KATEGORİ</th>
+                      <th className="px-5 py-3.5 w-28 text-center">KALORİ</th>
                       <th className="px-5 py-3.5 w-40 text-center">İŞLEMLER</th>
                     </tr>
                   </thead>
@@ -420,26 +622,136 @@ export default function AdminYemeklerPage() {
                       const rowNumber = startIndex + index + 1;
                       const badgeClass = CATEGORY_COLORS[m.category] || 'bg-stone-100 text-stone-800 border-stone-300';
                       const currentCal = m.calories !== null && m.calories !== undefined ? m.calories : getMealCalories(m.name, m.category);
+                      
+                      // Yemek görseli bilgisi (özel veya kütüphane desteği)
+                      const visual = getDishVisualInfo(m.name, m.category, m.imageUrl, m.description);
+                      const hasCustomImage = Boolean(m.imageUrl);
 
                       return (
                         <tr key={m.id} className="hover:bg-amber-50/40 transition-colors">
-                          <td className="px-5 py-3.5 text-center text-stone-400 font-bold">
+                          <td className="px-3 py-3.5 text-center text-stone-400 font-bold">
                             {rowNumber}
                           </td>
 
-                          {/* Yemek Adı */}
+                          {/* Görsel Sütunu */}
+                          <td className="px-4 py-3 text-center align-middle">
+                            {isEditing ? (
+                              <div className="flex flex-col items-center gap-1">
+                                {editImageUrl ? (
+                                  <div className="relative group w-12 h-12">
+                                    <img
+                                      src={editImageUrl}
+                                      alt="Önizleme"
+                                      className="w-12 h-12 object-cover rounded-xl border border-amber-400 shadow-2xs"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditImageUrl('')}
+                                      className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-rose-600 text-white rounded-full text-[10px] flex items-center justify-center cursor-pointer"
+                                      title="Görseli Kaldır"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="w-12 h-12 rounded-xl border border-dashed border-stone-300 flex items-center justify-center bg-stone-50 text-stone-400 text-[10px] text-center font-bold">
+                                    Yok
+                                  </div>
+                                )}
+                                <input
+                                  ref={editFileInputRef}
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleEditFileUpload}
+                                  className="hidden"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => editFileInputRef.current?.click()}
+                                  className="text-[10px] text-amber-700 hover:text-amber-900 font-bold underline cursor-pointer"
+                                >
+                                  {editImageUrl ? 'Değiştir' : '+ Yükle'}
+                                </button>
+                              </div>
+                            ) : visual.imageUrl ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setPreviewModalImage({
+                                    url: visual.imageUrl!,
+                                    title: m.name,
+                                    category: CATEGORY_NAMES[m.category] || m.category,
+                                    description: m.description || visual.description,
+                                  })
+                                }
+                                className="relative group cursor-pointer block mx-auto"
+                                title="Büyütmek ve detayını görmek için tıklayın"
+                              >
+                                <img
+                                  src={visual.imageUrl}
+                                  alt={m.name}
+                                  className="w-12 h-12 object-cover rounded-xl border border-stone-200 shadow-2xs group-hover:scale-110 group-hover:border-amber-400 transition-all"
+                                />
+                                {hasCustomImage && (
+                                  <span
+                                    className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border border-white"
+                                    title="Özel Yüklenmiş Görsel"
+                                  />
+                                )}
+                              </button>
+                            ) : (
+                              <div className="w-12 h-12 mx-auto rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-400 text-lg">
+                                🍽️
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Yemek Adı & Açıklama */}
                           <td className="px-5 py-3.5 align-middle">
                             {isEditing ? (
-                              <input
-                                type="text"
-                                value={editName}
-                                onChange={(e) => handleEditNameChange(e.target.value)}
-                                className="w-full px-3 py-1.5 rounded-lg border border-amber-400 text-xs sm:text-sm font-bold text-stone-900 focus:outline-none bg-amber-50/50"
-                              />
+                              <div className="space-y-1.5">
+                                <input
+                                  type="text"
+                                  value={editName}
+                                  onChange={(e) => handleEditNameChange(e.target.value)}
+                                  className="w-full px-3 py-1.5 rounded-lg border border-amber-400 text-xs sm:text-sm font-bold text-stone-900 focus:outline-none bg-amber-50/50"
+                                  placeholder="Yemek adı..."
+                                />
+                                <input
+                                  type="text"
+                                  value={editImageUrl.startsWith('data:') ? '' : editImageUrl}
+                                  onChange={(e) => setEditImageUrl(e.target.value)}
+                                  placeholder="Görsel URL linki (https://...)"
+                                  className="w-full px-2.5 py-1 text-[11px] rounded-lg border border-stone-200 focus:outline-none bg-white"
+                                />
+                                <textarea
+                                  rows={1}
+                                  value={editDescription}
+                                  onChange={(e) => setEditDescription(e.target.value)}
+                                  placeholder="Yemek açıklaması / malzemeler..."
+                                  className="w-full px-2.5 py-1 text-[11px] rounded-lg border border-stone-200 focus:outline-none bg-white resize-none"
+                                />
+                              </div>
                             ) : (
-                              <span className="font-bold text-stone-900 text-sm">
-                                {m.name}
-                              </span>
+                              <div>
+                                <div className="font-black text-stone-900 text-sm flex items-center gap-1.5">
+                                  <span>{m.name}</span>
+                                  {hasCustomImage && (
+                                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                      Özel Fotoğraf
+                                    </span>
+                                  )}
+                                </div>
+                                {m.description ? (
+                                  <p className="text-[11px] text-stone-500 line-clamp-1 mt-0.5">
+                                    {m.description}
+                                  </p>
+                                ) : visual.description ? (
+                                  <p className="text-[11px] text-stone-400 line-clamp-1 mt-0.5 italic">
+                                    {visual.description}
+                                  </p>
+                                ) : null}
+                              </div>
                             )}
                           </td>
 
@@ -512,7 +824,7 @@ export default function AdminYemeklerPage() {
                                   type="button"
                                   onClick={() => handleStartEdit(m)}
                                   className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-amber-100 hover:text-amber-900 text-stone-700 text-xs font-bold transition-colors cursor-pointer border border-stone-200"
-                                  title="Yemeği Düzenle"
+                                  title="Yemeği & Görseli Düzenle"
                                 >
                                   ✏️ Düzenle
                                 </button>
@@ -535,7 +847,7 @@ export default function AdminYemeklerPage() {
               </div>
             </div>
 
-            {/* Sayfalama Kontrolleri (Pagination: 1 2 3... 25 Adet Sıralama) */}
+            {/* Sayfalama Kontrolleri (Pagination) */}
             {totalPages > 1 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-stone-100">
                 <div className="text-xs font-semibold text-stone-500 text-center sm:text-left">
@@ -552,12 +864,12 @@ export default function AdminYemeklerPage() {
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={validCurrentPage === 1}
-                    className="px-3 py-1.5 rounded-xl border border-stone-200 text-xs font-bold text-stone-700 bg-white hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 rounded-xl border border-stone-200 text-xs font-bold text-stone-700 bg-white hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                   >
                     &larr; Önceki
                   </button>
 
-                  {/* Sayfa Numaraları 1, 2, 3... */}
+                  {/* Sayfa Numaraları */}
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
                     const isActive = pageNum === validCurrentPage;
                     return (
@@ -581,7 +893,7 @@ export default function AdminYemeklerPage() {
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={validCurrentPage === totalPages}
-                    className="px-3 py-1.5 rounded-xl border border-stone-200 text-xs font-bold text-stone-700 bg-white hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 rounded-xl border border-stone-200 text-xs font-bold text-stone-700 bg-white hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
                   >
                     Sonraki &rarr;
                   </button>
@@ -591,6 +903,59 @@ export default function AdminYemeklerPage() {
           </div>
         )}
       </div>
+
+      {/* Görsel & Detay Önizleme Modalı */}
+      {previewModalImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setPreviewModalImage(null)}
+        >
+          <div
+            className="bg-white rounded-3xl overflow-hidden max-w-md w-full shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative aspect-video w-full bg-stone-100">
+              <img
+                src={previewModalImage.url}
+                alt={previewModalImage.title}
+                className="w-full h-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => setPreviewModalImage(null)}
+                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 text-white hover:bg-black/80 flex items-center justify-center text-sm font-black transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 border border-amber-200">
+                  {previewModalImage.category}
+                </span>
+                <span className="text-xs text-stone-400 font-medium">Yemek Görseli</span>
+              </div>
+              <h3 className="text-xl font-black text-stone-900">
+                {previewModalImage.title}
+              </h3>
+              {previewModalImage.description && (
+                <p className="text-xs sm:text-sm text-stone-600 leading-relaxed bg-stone-50 p-3 rounded-xl border border-stone-100">
+                  {previewModalImage.description}
+                </p>
+              )}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setPreviewModalImage(null)}
+                  className="w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-black rounded-xl transition-colors cursor-pointer"
+                >
+                  Kapat
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

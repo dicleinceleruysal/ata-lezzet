@@ -10,6 +10,7 @@ import {
   PixarDrink,
 } from './PixarIcons';
 import { getMealCalories } from '@/lib/mealCalories';
+import { getDishVisualInfo } from '@/lib/dishVisuals';
 
 export interface DailyMenuEntryData {
   id: string;
@@ -322,8 +323,19 @@ export default function MenuButtons() {
 
   const [dbMealsMap, setDbMealsMap] = useState<Record<string, CategoryKey>>({});
   const [dbCaloriesMap, setDbCaloriesMap] = useState<Record<string, number>>({});
+  const [dbImagesMap, setDbImagesMap] = useState<Record<string, string>>({});
+  const [dbDescriptionsMap, setDbDescriptionsMap] = useState<Record<string, string>>({});
 
-  // Veritabanı yemek ve kalori haritasını çek
+  // Seçilen yemeğin detay ve fotoğraf modalı (İsminden ne olduğunu bilmeyenler için)
+  const [selectedFoodModal, setSelectedFoodModal] = useState<{
+    name: string;
+    category: CategoryKey;
+    calories: number;
+    imageUrl: string | null;
+    description: string;
+  } | null>(null);
+
+  // Veritabanı yemek, kalori, görsel ve açıklama haritasını çek
   useEffect(() => {
     fetch('/api/meals')
       .then((res) => res.json())
@@ -331,7 +343,16 @@ export default function MenuButtons() {
         if (Array.isArray(data)) {
           const map: Record<string, CategoryKey> = {};
           const calMap: Record<string, number> = {};
-          data.forEach((m: { name?: string; category?: string; calories?: number | null }) => {
+          const imgMap: Record<string, string> = {};
+          const descMap: Record<string, string> = {};
+
+          data.forEach((m: {
+            name?: string;
+            category?: string;
+            calories?: number | null;
+            imageUrl?: string | null;
+            description?: string | null;
+          }) => {
             if (m.name) {
               const norm = normalizeFoodText(m.name);
               if (m.category) {
@@ -340,10 +361,18 @@ export default function MenuButtons() {
               if (typeof m.calories === 'number' && m.calories > 0) {
                 calMap[norm] = m.calories;
               }
+              if (m.imageUrl) {
+                imgMap[norm] = m.imageUrl;
+              }
+              if (m.description) {
+                descMap[norm] = m.description;
+              }
             }
           });
           setDbMealsMap(map);
           setDbCaloriesMap(calMap);
+          setDbImagesMap(imgMap);
+          setDbDescriptionsMap(descMap);
         }
       })
       .catch(() => {});
@@ -711,23 +740,55 @@ export default function MenuButtons() {
                       </span>
                     </div>
 
-                    {/* 3D Pixar Yemek Kartları Izgarası */}
+                    {/* Fotoğraflı Yemek Kartları Izgarası */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                       {currentDishes.map((dish, idx) => {
                         const cat = getDishCategory(dish);
                         const meta = CATEGORY_META[cat];
                         const calories = getDishCalories(dish);
+                        const norm = normalizeFoodText(dish);
+                        const visual = getDishVisualInfo(
+                          dish,
+                          cat,
+                          dbImagesMap[norm],
+                          dbDescriptionsMap[norm]
+                        );
 
                         return (
                           <div
                             key={idx}
-                            className={`p-4 rounded-2xl bg-white border border-stone-200 ${meta.cardBorder} hover:shadow-md transition-all duration-200 flex items-center gap-3.5 group`}
+                            onClick={() =>
+                              setSelectedFoodModal({
+                                name: dish,
+                                category: cat,
+                                calories,
+                                imageUrl: visual.imageUrl,
+                                description: visual.description,
+                              })
+                            }
+                            className={`p-3.5 sm:p-4 rounded-2xl bg-white border border-stone-200 ${meta.cardBorder} hover:shadow-md transition-all duration-200 flex items-center gap-3.5 group cursor-pointer`}
+                            title="Yemek fotoğrafını ve detaylı açıklamasını görmek için tıklayın"
                           >
-                            <div
-                              className={`p-2.5 rounded-2xl border flex-shrink-0 transition-transform group-hover:scale-105 ${meta.iconBox}`}
-                            >
-                              {getPixarIconByCategory(cat)}
-                            </div>
+                            {/* Yemek Fotoğrafı veya 3D Pixar İkonu */}
+                            {visual.imageUrl ? (
+                              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden flex-shrink-0 border border-amber-200/80 shadow-2xs group-hover:scale-105 transition-transform bg-amber-50/50">
+                                <img
+                                  src={visual.imageUrl}
+                                  alt={dish}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-black tracking-wide">
+                                  🔍 İncele
+                                </div>
+                              </div>
+                            ) : (
+                              <div
+                                className={`p-2.5 rounded-2xl border flex-shrink-0 transition-transform group-hover:scale-105 ${meta.iconBox}`}
+                              >
+                                {getPixarIconByCategory(cat)}
+                              </div>
+                            )}
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2 mb-1">
@@ -741,9 +802,18 @@ export default function MenuButtons() {
                                   <span>{calories} kcal</span>
                                 </span>
                               </div>
-                              <h4 className="font-black text-stone-900 text-sm sm:text-base leading-snug">
+                              <h4 className="font-black text-stone-900 text-sm sm:text-base leading-snug group-hover:text-amber-800 transition-colors">
                                 {dish}
                               </h4>
+                              {visual.description && (
+                                <p className="text-[11px] text-stone-500 line-clamp-1 mt-0.5">
+                                  {visual.description}
+                                </p>
+                              )}
+                              <div className="text-[10px] font-bold text-amber-700/80 group-hover:text-amber-900 mt-1 flex items-center gap-1">
+                                <span>Fotoğraf & Detay</span>
+                                <span>&rarr;</span>
+                              </div>
                             </div>
                           </div>
                         );
@@ -893,18 +963,40 @@ export default function MenuButtons() {
                           </span>
                         </div>
 
-                        {/* Yemekler Listesi (Temiz ve Okunabilir Rozetler) */}
+                        {/* Yemekler Listesi (Fotoğraf İnceleme Özellikli Rozetler) */}
                         <div className="flex flex-wrap gap-1.5 flex-1">
                           {dishes.map((dish, dIdx) => {
                             const cat = getDishCategory(dish);
                             const meta = CATEGORY_META[cat];
+                            const cal = getDishCalories(dish);
+                            const norm = normalizeFoodText(dish);
+                            const visual = getDishVisualInfo(
+                              dish,
+                              cat,
+                              dbImagesMap[norm],
+                              dbDescriptionsMap[norm]
+                            );
+
                             return (
-                              <span
+                              <button
                                 key={dIdx}
-                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-2xs ${meta.badgeClass}`}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedFoodModal({
+                                    name: dish,
+                                    category: cat,
+                                    calories: cal,
+                                    imageUrl: visual.imageUrl,
+                                    description: visual.description,
+                                  });
+                                }}
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-2xs hover:scale-105 transition-transform cursor-pointer ${meta.badgeClass}`}
+                                title="Fotoğrafını ve içeriğini görmek için tıklayın"
                               >
+                                {visual.imageUrl && <span className="text-[10px]">📷</span>}
                                 <span>{dish}</span>
-                              </span>
+                              </button>
                             );
                           })}
                         </div>
@@ -928,6 +1020,91 @@ export default function MenuButtons() {
                 Aramanıza uygun yemek veya gün bulunamadı.
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Yemek Detayı & Fotoğraf Modalı (İsminden ne olduğunu bilmeyenler için) */}
+      {selectedFoodModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+          onClick={() => setSelectedFoodModal(null)}
+        >
+          <div
+            className="bg-white rounded-3xl overflow-hidden max-w-md w-full shadow-2xl border border-stone-200 animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Fotoğraf Alanı */}
+            {selectedFoodModal.imageUrl ? (
+              <div className="relative aspect-video w-full bg-stone-100">
+                <img
+                  src={selectedFoodModal.imageUrl}
+                  alt={selectedFoodModal.name}
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => setSelectedFoodModal(null)}
+                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 text-white hover:bg-black/80 flex items-center justify-center text-sm font-black transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <div className="p-6 bg-gradient-to-br from-amber-50 to-orange-50 border-b border-amber-100 flex items-center justify-between">
+                <div className="w-16 h-16 rounded-2xl bg-white p-2 border border-amber-200 shadow-xs flex items-center justify-center">
+                  {getPixarIconByCategory(selectedFoodModal.category)}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedFoodModal(null)}
+                  className="w-8 h-8 rounded-full bg-stone-200 text-stone-700 hover:bg-stone-300 flex items-center justify-center text-sm font-black transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* İçerik & Bilgi */}
+            <div className="p-6 space-y-3.5">
+              <div className="flex items-center justify-between gap-2">
+                <span
+                  className={`inline-block text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-md border shadow-2xs ${
+                    CATEGORY_META[selectedFoodModal.category]?.badgeClass || ''
+                  }`}
+                >
+                  {CATEGORY_META[selectedFoodModal.category]?.label || selectedFoodModal.category}
+                </span>
+                <span className="text-xs font-black text-amber-900 bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                  <span>🔥</span>
+                  <span>{selectedFoodModal.calories} kcal</span>
+                </span>
+              </div>
+
+              <h3 className="text-xl font-black text-stone-900 tracking-tight">
+                {selectedFoodModal.name}
+              </h3>
+
+              {selectedFoodModal.description && (
+                <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200/80 text-xs sm:text-sm text-stone-700 leading-relaxed space-y-1">
+                  <p className="font-extrabold text-amber-900 text-[10px] uppercase tracking-wider flex items-center gap-1">
+                    <span>ℹ️</span>
+                    <span>Yemek Hakkında / İçerik</span>
+                  </p>
+                  <p>{selectedFoodModal.description}</p>
+                </div>
+              )}
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedFoodModal(null)}
+                  className="w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-black rounded-xl transition-colors cursor-pointer shadow-xs"
+                >
+                  Tamam, Kapat
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
