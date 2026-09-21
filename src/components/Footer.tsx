@@ -11,9 +11,24 @@ interface VersionItem {
 
 const VERSION_HISTORY: VersionItem[] = [
   {
+    version: 'v1.3.0',
+    date: '21 Eylül 2026',
+    isCurrent: true,
+    changes: [
+      'Doğrudan Günün Menüsü Görünümü: Açılır pencereler (popover/modal) kaldırıldı; ana sayfa doğrudan bugünün zengin yemek kartlarıyla açılır.',
+      'Günlük Ok Navigasyonu: Önceki ve sonraki günlere sağ-sol ok butonları ve klavye ok tuşları (← / →) ile akıcı geçiş sağlandı; tek tıkla "Bugün"e dönüş butonu eklendi.',
+      '6 Günlük Çalışma Takvimi Izgarası: Tabldot hizmeti Pazartesi-Cumartesi arası olduğundan Pazar günü takvimden kaldırıldı. 6 sütunlu düzenle her gün hücresine %17 daha fazla yatay alan kazandırıldı.',
+      'Net ve Ferah Tipografi: Yemeklerin başındaki renkli noktalar kaldırıldı; yemek isimleri iki satıra kadar rahatça okunabilecek sade ve ferah bir düzene kavuşturuldu.',
+      'Belirgin Kamera Rozeti: Fotoğrafı olan yemeklerin yanına canlı amber renkli özel kamera butonu eklendi; tıklandığında lightbox görsel büyütme penceresi açılır.',
+      'Sade ve Gerçekçi Görsel Kataloğu: Türk mutfağına uygun, temiz beyaz arka planlı gerçekçi yemek fotoğrafları 164 yemeğin tamamına entegre edildi (%100 görsel kapsamı).',
+      'Yemek Açıklamalarının ve Özel Etiketlerin Kaldırılması: Kullanıcı talebi doğrultusunda yemek açıklamaları ve "özel fotoğraf" gibi ibareler arayüzden tamamen temizlenerek sade bir kurumsal kimlik sağlandı.',
+      'Admin Paneli Fotoğraf Yükleme: Yemek Yönetimi sayfasından bilgisayar veya telefondan tek tıkla cihazdan fotoğraf seçme (otomatik 35KB JPEG optimizasyonuyla) veya URL girme desteği eklendi.',
+      'GitHub ve Vercel Altyapısı: Proje resmi GitHub deposuna yüklendi; Vercel sunucusuz ortamında SQLite veritabanının otomatik beslenmesi ve kalıcılığı güvence altına alındı.',
+    ],
+  },
+  {
     version: 'v1.2.0',
     date: '18 Eylül 2026',
-    isCurrent: true,
     changes: [
       'Gerçek Kalori Hesaplama Motoru: Türkiye kurumsal yemekhane/tabldot standartları baz alınarak 164 yemeğin porsiyon kalorileri hesaplandı ve sisteme işlendi.',
       'Günün Menüsü Kalori Entegrasyonu: Her bir yemek kartında porsiyon kalorisi ve gün başlığında menünün toplam kalori rozeti (🔥 Toplam: X kcal) eklendi.',
@@ -101,7 +116,7 @@ export default function Footer() {
 
           {/* 4. SÜRÜM BİLGİSİ & TIKLANABİLİR SÜRÜM GEÇMİŞİ */}
           <div className="pt-4 flex items-center justify-center gap-2 text-xs text-stone-400 font-medium">
-            <span className="text-stone-400 tracking-wide">Ata Lezzet v1.2.0</span>
+            <span className="text-stone-400 tracking-wide">Ata Lezzet v1.3.0</span>
             <span className="text-stone-300">|</span>
             <button
               type="button"
