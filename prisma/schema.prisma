@@ -1,0 +1,88 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Meal {
+  id             String          @id @default(cuid())
+  name           String
+  category       String          // corba, ana_yemek, yan_yemek, salata, tatli, icecek
+  description    String?
+  calories       Int?
+  imageUrl       String?
+  isActive       Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  dailyPlanMeals DailyPlanMeal[]
+}
+
+model WeeklyPlan {
+  id         String      @id @default(cuid())
+  year       Int
+  weekNumber Int
+  startDate  DateTime
+  endDate    DateTime
+  createdAt  DateTime    @default(now())
+  dailyPlans DailyPlan[]
+
+  @@unique([year, weekNumber])
+}
+
+model DailyPlan {
+  id           String          @id @default(cuid())
+  weeklyPlanId String
+  weeklyPlan   WeeklyPlan      @relation(fields: [weeklyPlanId], references: [id], onDelete: Cascade)
+  date         DateTime
+  dayName      String          // Pazartesi, Salı, Çarşamba, Perşembe, Cuma, Cumartesi
+  meals        DailyPlanMeal[]
+
+  @@unique([weeklyPlanId, date])
+}
+
+model DailyPlanMeal {
+  id          String    @id @default(cuid())
+  dailyPlanId String
+  dailyPlan   DailyPlan @relation(fields: [dailyPlanId], references: [id], onDelete: Cascade)
+  mealId      String
+  meal        Meal      @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  category    String?
+
+  @@unique([dailyPlanId, mealId])
+}
+
+model MonthlyPlan {
+  id        String           @id @default(cuid())
+  year      Int
+  month     Int              // 1..12
+  monthName String           // e.g. "Eylül 2026"
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  entries   DailyMenuEntry[]
+
+  @@unique([year, month])
+}
+
+model DailyMenuEntry {
+  id            String      @id @default(cuid())
+  monthlyPlanId String
+  monthlyPlan   MonthlyPlan @relation(fields: [monthlyPlanId], references: [id], onDelete: Cascade)
+  date          DateTime    // Günü temsil eden tarih
+  dateStr       String      // "1 Eylül 2026"
+  dayName       String      // "Salı"
+  mealText      String      // "ŞEHRİYE ÇORBASI, YEŞİL FASÜLYE, YOĞURTLU MAKARNA, MEYVE, SALATABAR"
+  items         String      // JSON string veya virgülle ayrılmış yemekler
+  isHoliday     Boolean     @default(false)
+
+  @@unique([monthlyPlanId, date])
+}
+
+model UserNote {
+  id        String   @id @default(cuid())
+  content   String
+  status    String   @default("pending") // pending, reviewed, archived
+  createdAt DateTime @default(now())
+}
