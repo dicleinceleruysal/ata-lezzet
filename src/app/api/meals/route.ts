@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getMealCalories } from '@/lib/mealCalories';
+import { ensureDatabaseSeeded } from '@/lib/ensureSeed';
 
 export async function GET() {
   try {
+    await ensureDatabaseSeeded(prisma);
     const meals = await prisma.meal.findMany({
       where: { isActive: true },
       orderBy: [{ category: 'asc' }, { name: 'asc' }],

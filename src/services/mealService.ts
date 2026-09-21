@@ -18,6 +18,7 @@ import {
   normalizeDishName,
 } from '@/lib/mealRules';
 import { getMealCalories } from '@/lib/mealCalories';
+import { ensureDatabaseSeeded } from '@/lib/ensureSeed';
 
 export const TURKISH_DAYS = [
   'Pazartesi',
@@ -245,6 +246,8 @@ const MONTH_NAMES_TR = [
  * Pazar günleri kesinlikle hariç tutulur.
  */
 export async function getMonthlyPlan(year?: number, month?: number) {
+  await ensureDatabaseSeeded(prisma);
+
   let plan = null;
   if (year && month) {
     plan = await prisma.monthlyPlan.findUnique({
@@ -621,6 +624,8 @@ export async function getTodayLunchMenu(targetDate: Date = new Date()) {
  * Onaylanmış tüm aylık planların özet listesini getirir.
  */
 export async function getAllMonthlyPlansSummary() {
+  await ensureDatabaseSeeded(prisma);
+
   const plans = await prisma.monthlyPlan.findMany({
     orderBy: [{ year: 'desc' }, { month: 'desc' }],
     include: {
