@@ -279,13 +279,12 @@ const CATEGORY_DOTS: Record<CategoryKey, string> = {
 };
 
 const WEEKDAYS = [
-  { short: 'Pzt', full: 'Pazartesi', isWeekend: false },
-  { short: 'Sal', full: 'Salı', isWeekend: false },
-  { short: 'Çar', full: 'Çarşamba', isWeekend: false },
-  { short: 'Per', full: 'Perşembe', isWeekend: false },
-  { short: 'Cum', full: 'Cuma', isWeekend: false },
-  { short: 'Cmt', full: 'Cumartesi', isWeekend: false },
-  { short: 'Paz', full: 'Pazar', isWeekend: true },
+  { short: 'Pzt', full: 'Pazartesi' },
+  { short: 'Sal', full: 'Salı' },
+  { short: 'Çar', full: 'Çarşamba' },
+  { short: 'Per', full: 'Perşembe' },
+  { short: 'Cum', full: 'Cuma' },
+  { short: 'Cmt', full: 'Cumartesi' },
 ];
 
 function groupEntriesByWeek(entries: DailyMenuEntryData[]): WeekGroup[] {
@@ -501,10 +500,12 @@ export default function MenuButtons() {
     // Ayın kaç gün çektiği
     const totalDays = new Date(year, month, 0).getDate();
 
-    // Ayın ilk gününün haftanın hangi günü olduğu (0: Pazar, 1: Pazartesi, ...)
+    // Ayın ilk gününün haftanın hangi günü olduğu (0: Pazar, 1: Pazartesi, 2: Salı, ...)
     const firstDayObj = new Date(year, month - 1, 1);
-    // Pazartesi = 0 olacak şekilde dönüştür: (0=Pzt, 1=Sal, ..., 6=Paz)
-    const firstDayWeekday = (firstDayObj.getDay() + 6) % 7;
+    const firstDayOfWeek = firstDayObj.getDay();
+    // 6 günlük çalışma takvimi (Pzt=0, Sal=1, Çar=2, Per=3, Cum=4, Cmt=5)
+    // Ayın 1'i Pazar ise atlanacağı için Pazartesi (0) ile başlar.
+    const firstDayWeekday = firstDayOfWeek === 0 ? 0 : firstDayOfWeek - 1;
 
     const now = new Date();
     const currentDay = now.getDate();
@@ -516,7 +517,6 @@ export default function MenuButtons() {
       key: string;
       dayNumber?: number;
       dateObj?: Date;
-      isSunday?: boolean;
       isToday?: boolean;
       entry?: DailyMenuEntryData | null;
       dishes?: string[];
@@ -526,7 +526,7 @@ export default function MenuButtons() {
 
     const cells: CalendarCell[] = [];
 
-    // Ayın ilk gününden önceki boş hücreler (Pzt hizalaması için)
+    // Ayın ilk gününden önceki boş hücreler (Pazartesi hizalaması için)
     for (let i = 0; i < firstDayWeekday; i++) {
       cells.push({
         type: 'empty',
@@ -537,10 +537,12 @@ export default function MenuButtons() {
     const q = searchQuery.trim().toLowerCase();
     let matchingCount = 0;
 
-    // Ayın günleri
+    // Ayın günleri (Pazar günleri hariç, sadece Pazartesi - Cumartesi)
     for (let d = 1; d <= totalDays; d++) {
       const dateObj = new Date(year, month - 1, d);
-      const isSunday = dateObj.getDay() === 0;
+      // Pazar tatilini tamamen takvimden kaldırıyoruz
+      if (dateObj.getDay() === 0) continue;
+
       const isToday = d === currentDay && month === currentMonth && year === currentYear;
 
       const entry = entriesByDay.get(d) || null;
@@ -568,7 +570,6 @@ export default function MenuButtons() {
         key: `day-${d}`,
         dayNumber: d,
         dateObj,
-        isSunday,
         isToday,
         entry,
         dishes,
@@ -577,10 +578,10 @@ export default function MenuButtons() {
       });
     }
 
-    // Son satırı 7'nin katına tamamlamak için son boş hücreler
-    const remainder = cells.length % 7;
+    // Son satırı 6'nın katına tamamlamak için son boş hücreler
+    const remainder = cells.length % 6;
     if (remainder !== 0) {
-      const paddingNeeded = 7 - remainder;
+      const paddingNeeded = 6 - remainder;
       for (let i = 0; i < paddingNeeded; i++) {
         cells.push({
           type: 'empty',
@@ -1001,27 +1002,13 @@ export default function MenuButtons() {
               </div>
             </div>
 
-            {/* Lejant (Kategori Renk Kodları) & Hızlı Aksiyonlar */}
+            {/* Açıklama & Hızlı Aksiyonlar (Noktalar Kaldırıldı) */}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-stone-100">
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] font-bold text-stone-600">
-                <span className="text-stone-400 text-[10px] uppercase font-black tracking-wider">Kategoriler:</span>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs font-semibold text-stone-500">
+                <span>Pazartesi – Cumartesi 6 Günlük Çalışma Takvimi</span>
+                <span className="text-stone-300">•</span>
                 <span className="inline-flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-amber-500" /> Çorba
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-rose-500" /> Ana Yemek
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-orange-500" /> Yan Yemek
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" /> Salata
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-purple-500" /> Tatlı
-                </span>
-                <span className="inline-flex items-center gap-1 text-stone-500">
-                  <span className="text-xs">📷</span> Fotoğraf
+                  <span>📷</span> Fotoğraflı yemeklerin görselini büyütmek için tıklayabilirsiniz
                 </span>
               </div>
 
@@ -1036,7 +1023,7 @@ export default function MenuButtons() {
             </div>
           </div>
 
-          {/* 7 Günlük Takvim Izgarası */}
+          {/* 6 Günlük Takvim Izgarası (Pazartesi - Cumartesi) */}
           <div className="bg-white rounded-3xl p-4 sm:p-6 border-2 border-amber-200/90 shadow-sm space-y-4">
             {/* Mobil Kaydırma İpucu */}
             <div className="flex items-center justify-between text-xs text-stone-500 font-bold md:hidden px-1">
@@ -1045,17 +1032,13 @@ export default function MenuButtons() {
             </div>
 
             <div className="overflow-x-auto pb-2 scrollbar-thin">
-              <div className="min-w-[760px]">
-                {/* 7 Sütun Gün Başlıkları */}
-                <div className="grid grid-cols-7 gap-2 mb-2.5">
+              <div className="min-w-[720px]">
+                {/* 6 Sütun Gün Başlıkları */}
+                <div className="grid grid-cols-6 gap-2 mb-2.5">
                   {WEEKDAYS.map((w, idx) => (
                     <div
                       key={idx}
-                      className={`py-2 px-2 text-center rounded-xl font-black text-xs uppercase tracking-wider ${
-                        w.isWeekend
-                          ? 'bg-rose-50 text-rose-700 border border-rose-200/60'
-                          : 'bg-stone-100 text-stone-700 border border-stone-200/60'
-                      }`}
+                      className="py-2.5 px-2 text-center rounded-xl font-black text-xs uppercase tracking-wider bg-stone-100 text-stone-800 border border-stone-200/80"
                     >
                       <span className="hidden sm:inline">{w.full}</span>
                       <span className="sm:hidden">{w.short}</span>
@@ -1063,38 +1046,15 @@ export default function MenuButtons() {
                   ))}
                 </div>
 
-                {/* 7 Sütun Gün Hücreleri */}
-                <div className="grid grid-cols-7 gap-2">
+                {/* 6 Sütun Gün Hücreleri */}
+                <div className="grid grid-cols-6 gap-2">
                   {calendarData.cells.map((cell) => {
                     if (cell.type === 'empty') {
                       return (
                         <div
                           key={cell.key}
-                          className="min-h-[145px] rounded-2xl bg-stone-50/40 border border-dashed border-stone-200/50"
+                          className="min-h-[150px] rounded-2xl bg-stone-50/40 border border-dashed border-stone-200/50"
                         />
-                      );
-                    }
-
-                    // Pazar Tatili Hücresi
-                    if (cell.isSunday) {
-                      return (
-                        <div
-                          key={cell.key}
-                          className="min-h-[145px] p-2.5 rounded-2xl bg-stone-50/70 border border-dashed border-stone-200 flex flex-col justify-between select-none"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-black text-stone-400">{cell.dayNumber}</span>
-                            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200/60">
-                              Tatil
-                            </span>
-                          </div>
-                          <div className="my-auto text-center py-2">
-                            <span className="text-2xl block mb-1">☕</span>
-                            <span className="text-[11px] font-black text-stone-600 block">Pazar Tatili</span>
-                            <span className="text-[10px] text-stone-400 font-medium">Hizmet Yok</span>
-                          </div>
-                          <div className="h-2" />
-                        </div>
                       );
                     }
 
@@ -1104,7 +1064,7 @@ export default function MenuButtons() {
                         <div
                           key={cell.key}
                           onClick={() => handleSelectDayFromMonthly(cell.entry!)}
-                          className={`min-h-[145px] p-2.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group hover:shadow-lg hover:-translate-y-0.5 ${
+                          className={`min-h-[150px] p-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group hover:shadow-lg hover:-translate-y-0.5 ${
                             cell.isToday
                               ? 'bg-emerald-50/40 border-emerald-400 ring-2 ring-emerald-300 shadow-sm'
                               : cell.matchesSearch
@@ -1138,21 +1098,19 @@ export default function MenuButtons() {
                             ) : null}
                           </div>
 
-                          {/* Yemekler Listesi (Renk Noktaları & Fotoğraf Simgesi) */}
-                          <div className="space-y-1 flex-1">
+                          {/* Yemekler Listesi (Noktasız, Net ve Okunaklı) */}
+                          <div className="space-y-1 flex-1 my-0.5">
                             {cell.dishes?.slice(0, 4).map((dish, dIdx) => {
                               const cat = getDishCategory(dish);
-                              const dotColor = CATEGORY_DOTS[cat] || 'bg-stone-400';
                               const norm = normalizeFoodText(dish);
                               const dishImg = getDishImageUrl(dish, cat, dbImagesMap[norm]);
 
                               return (
                                 <div
                                   key={dIdx}
-                                  className="flex items-center gap-1.5 text-[11px] leading-tight font-bold text-stone-700 group-hover:text-stone-950 transition-colors"
+                                  className="flex items-start justify-between gap-1 text-[12px] font-bold text-stone-800 group-hover:text-stone-950 leading-snug py-0.5 border-b border-stone-100/70 last:border-0"
                                 >
-                                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
-                                  <span className="truncate flex-1" title={dish}>
+                                  <span className="line-clamp-2 flex-1" title={dish}>
                                     {dish}
                                   </span>
                                   {dishImg && (
@@ -1167,7 +1125,7 @@ export default function MenuButtons() {
                                           imageUrl: dishImg,
                                         });
                                       }}
-                                      className="text-[10px] opacity-75 hover:opacity-100 flex-shrink-0 hover:scale-125 transition-transform cursor-pointer"
+                                      className="text-[11px] opacity-75 hover:opacity-100 flex-shrink-0 hover:scale-125 transition-transform cursor-pointer ml-1"
                                       title="Fotoğrafı büyüt"
                                     >
                                       📷
@@ -1177,15 +1135,15 @@ export default function MenuButtons() {
                               );
                             })}
                             {cell.dishes && cell.dishes.length > 4 && (
-                              <div className="text-[10px] font-extrabold text-stone-400 pl-3">
+                              <div className="text-[10px] font-extrabold text-stone-400 pt-0.5">
                                 +{cell.dishes.length - 4} yemek daha
                               </div>
                             )}
                           </div>
 
                           {/* Alt İpucu: Günün Menüsünde Aç */}
-                          <div className="flex items-center justify-between pt-1 mt-1 border-t border-stone-100/70 text-[9px] font-black">
-                            <span className="text-stone-400 truncate max-w-[80px]">
+                          <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-stone-100/80 text-[10px] font-black">
+                            <span className="text-stone-400 truncate max-w-[85px]">
                               {cell.entry.dayName}
                             </span>
                             <span className="text-amber-700 group-hover:text-amber-900 group-hover:translate-x-0.5 transition-all flex items-center gap-0.5">
@@ -1201,7 +1159,7 @@ export default function MenuButtons() {
                     return (
                       <div
                         key={cell.key}
-                        className="min-h-[145px] p-2.5 rounded-2xl bg-stone-50/50 border border-stone-200/60 flex flex-col justify-between"
+                        className="min-h-[150px] p-3 rounded-2xl bg-stone-50/50 border border-stone-200/60 flex flex-col justify-between"
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-black text-stone-400">{cell.dayNumber}</span>
