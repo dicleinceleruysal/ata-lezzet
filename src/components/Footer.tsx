@@ -11,9 +11,19 @@ interface VersionItem {
 
 const VERSION_HISTORY: VersionItem[] = [
   {
-    version: 'v1.4.2',
+    version: 'v1.5.0',
     date: '22 Eylül 2026',
     isCurrent: true,
+    changes: [
+      'PWA (Progressive Web App) Dönüşümü: Ata Lezzet uygulaması artık Android, iOS, Windows ve Mac cihazlarda doğrudan ana ekrana ve masaüstüne yerel bir uygulama gibi yüklenebilir.',
+      'Akıllı Service Worker & Çevrimdışı (Offline) Desteği: public/sw.js servisi ile yemek görselleri (/dishes/*) ve sayfa şablonları önbelleklenerek bağlantı kopsa dahi menülerin hızlı açılması sağlandı.',
+      'Web App Manifest & HD İkonlar: 192x192 ve 512x512 maskable yüksek çözünürlüklü uygulama ikonları, kurumsal amber tema rengi (#f59e0b) ve tarayıcı çubuğu olmaksızın tam ekran (standalone) çalışma desteği sağlandı.',
+      'Kolay Kurulum Bildirimi & iOS Rehberi: Android ve masaüstü kullanıcıları için tek tıkla yükleme butonu; iOS Safari kullanıcıları için adım adım "Ana Ekrana Ekle" rehberi geliştirildi.',
+    ],
+  },
+  {
+    version: 'v1.4.2',
+    date: '22 Eylül 2026',
     changes: [
       'Aylık Menü Mobil Görünüm Modernizasyonu: Mobildeki kafa karıştırıcı ve karmaşık çok renkli rozet karmaşası kaldırıldı; her gün için yemekler porsiyon kalori bilgileri, küçük görsel önizlemeleri ve nötr kurumsal tipografiyle yapılandırılmış şık kartlara dönüştürüldü.',
       'Hızlı Hafta Gezinme Çubuğu: Mobilde kullanıcıların uzun listelerde kaybolmaması için "Tüm Ay" ve haftalar arasında (1. Hafta, 2. Hafta...) tek dokunuşla geçiş sağlayan yatay hafta seçici eklendi.',
@@ -150,7 +160,7 @@ export default function Footer() {
 
           {/* 4. SÜRÜM BİLGİSİ & TIKLANABİLİR SÜRÜM GEÇMİŞİ */}
           <div className="pt-4 flex items-center justify-center gap-2 text-xs text-stone-400 font-medium">
-            <span className="text-stone-400 tracking-wide">Ata Lezzet v1.4.2</span>
+            <span className="text-stone-400 tracking-wide">Ata Lezzet v1.5.0</span>
             <span className="text-stone-300">|</span>
             <button
               type="button"
