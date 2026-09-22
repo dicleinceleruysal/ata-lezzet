@@ -288,12 +288,14 @@ export default function AdminListelerPage() {
   const [newMealCategory, setNewMealCategory] = useState<string>('ana_yemek');
   const [quickAddLoading, setQuickAddLoading] = useState(false);
 
-  // Yemek Bazlı Değiştirme (Arama ve Filtreli Açılır Menü) State
+  // Yemek Seçici ve Değiştirici (Arama ve Filtreli Açılır Menü) State
   const [swapState, setSwapState] = useState<{
+    mode: 'swap' | 'add';
     type: 'monthly' | 'wizard';
     dayIndex: number;
-    dishIndex: number;
-    dishName: string;
+    dishIndex?: number;
+    dishName?: string;
+    title?: string;
     anchorRect: DOMRect | null;
   } | null>(null);
 
@@ -307,10 +309,28 @@ export default function AdminListelerPage() {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
     setSwapState({
+      mode: 'swap',
       type,
       dayIndex,
       dishIndex,
       dishName,
+      anchorRect: rect,
+    });
+  };
+
+  const handleOpenAdd = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    type: 'monthly' | 'wizard',
+    dayIndex: number,
+    title: string
+  ) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setSwapState({
+      mode: 'add',
+      type,
+      dayIndex,
+      title,
       anchorRect: rect,
     });
   };
@@ -343,14 +363,24 @@ export default function AdminListelerPage() {
     });
   };
 
-  const handleApplySwap = (newDishName: string) => {
+  const handleApplySelection = (dishName: string) => {
     if (!swapState) return;
-    if (swapState.type === 'monthly') {
-      handleSwapDishInDay(swapState.dayIndex, swapState.dishIndex, newDishName);
+    const { mode, type, dayIndex, dishIndex } = swapState;
+
+    if (mode === 'swap' && typeof dishIndex === 'number') {
+      if (type === 'monthly') {
+        handleSwapDishInDay(dayIndex, dishIndex, dishName);
+      } else {
+        handleSwapDishInWizardDay(dayIndex, dishIndex, dishName);
+      }
     } else {
-      handleSwapDishInWizardDay(swapState.dayIndex, swapState.dishIndex, newDishName);
+      // Add mode
+      if (type === 'monthly') {
+        handleAddDishToDay(dayIndex, dishName);
+      } else {
+        handleAddDishToWizardDay(dayIndex, dishName);
+      }
     }
-    setSwapState(null);
   };
 
   // Onaylanmış aylık planları çek
@@ -1127,19 +1157,22 @@ export default function AdminListelerPage() {
                                   );
                                 })}
 
-                                {/* Veritabanından Yemek Ekle Butonu */}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setPickerDayIndex(index);
-                                    setPickerSearch('');
-                                    setPickerCategoryFilter('all');
-                                    setNewMealCategory(autoDetectCategory(''));
-                                  }}
-                                  className="inline-flex items-center gap-1 text-xs font-extrabold px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-xs cursor-pointer"
-                                >
-                                  <span>+ Yemek Seç / Ekle</span>
-                                </button>
+                                 {/* Veritabanından Yemek Ekle Butonu (Arama ve Filtreli Açılır Menü) */}
+                                 <button
+                                   type="button"
+                                   onClick={(e) =>
+                                     handleOpenAdd(
+                                       e,
+                                       'monthly',
+                                       index,
+                                       `${entry.dateStr} (${entry.dayName}) Menüsüne Yemek Ekle`
+                                     )
+                                   }
+                                   className="inline-flex items-center gap-1 text-xs font-extrabold px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-xs cursor-pointer"
+                                   title="Aramalı ve filtreli açılır menüden yemek seç / ekle"
+                                 >
+                                   <span>+ Yemek Seç / Ekle</span>
+                                 </button>
                               </div>
 
                               {/* Metin Düzenleme (Hızlı Doğrudan Düzenleme) */}
@@ -1397,13 +1430,16 @@ export default function AdminListelerPage() {
 
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      setPickerTarget('wizard');
-                                      setPickerDayIndex(dayIdx);
-                                      setPickerSearch('');
-                                      setPickerCategoryFilter('all');
-                                    }}
+                                    onClick={(e) =>
+                                      handleOpenAdd(
+                                        e,
+                                        'wizard',
+                                        dayIdx,
+                                        `${entry.dateStr} (${entry.dayName}) Taslağına Yemek Ekle`
+                                      )
+                                    }
                                     className="px-2.5 py-1 rounded-lg border border-dashed border-amber-400 text-amber-700 hover:bg-amber-100/60 font-extrabold text-xs transition-colors cursor-pointer"
+                                    title="Aramalı ve filtreli açılır menüden yemek seç / ekle"
                                   >
                                     + Yemek Ekle
                                   </button>
@@ -1720,15 +1756,26 @@ export default function AdminListelerPage() {
         month={selectedMonth}
       />
 
-      {/* Yemek Bazlı Değiştirme (Arama ve Filtreli Açılır Menü) */}
-      <DishSwapPopover
-        isOpen={swapState !== null}
-        anchorRect={swapState?.anchorRect || null}
-        currentDish={swapState?.dishName || ''}
-        availableMeals={availableMeals}
-        onSelect={handleApplySwap}
-        onClose={() => setSwapState(null)}
-      />
+      {/* Yemek Seçici ve Değiştirici (Arama ve Filtreli Açılır Menü) */}
+      {(() => {
+        const activeList = swapState?.type === 'wizard' ? wizardEntries : monthlyEntries;
+        const entry = swapState && typeof swapState.dayIndex === 'number' ? activeList[swapState.dayIndex] : null;
+        const currentDishes = entry ? entry.items || parseItems(entry.mealText) : [];
+
+        return (
+          <DishSwapPopover
+            isOpen={swapState !== null}
+            anchorRect={swapState?.anchorRect || null}
+            mode={swapState?.mode || 'swap'}
+            title={swapState?.title}
+            currentDish={swapState?.dishName || ''}
+            currentDishes={currentDishes}
+            availableMeals={availableMeals}
+            onSelect={handleApplySelection}
+            onClose={() => setSwapState(null)}
+          />
+        );
+      })()}
     </div>
   );
 }

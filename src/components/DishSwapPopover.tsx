@@ -34,16 +34,22 @@ const CATEGORY_TAG_COLORS: Record<string, string> = {
 interface DishSwapPopoverProps {
   isOpen: boolean;
   anchorRect: DOMRect | null;
-  currentDish: string;
+  mode?: 'swap' | 'add';
+  title?: string;
+  currentDish?: string;
+  currentDishes?: string[];
   availableMeals: MealOption[];
-  onSelect: (newDishName: string) => void;
+  onSelect: (dishName: string) => void;
   onClose: () => void;
 }
 
 export default function DishSwapPopover({
   isOpen,
   anchorRect,
-  currentDish,
+  mode = 'swap',
+  title,
+  currentDish = '',
+  currentDishes = [],
   availableMeals,
   onSelect,
   onClose,
@@ -53,42 +59,47 @@ export default function DishSwapPopover({
   const [coords, setCoords] = useState<{ top: number; left: number; width: number }>({
     top: 0,
     left: 0,
-    width: 360,
+    width: 380,
   });
 
   const popoverRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Mevcut yemeğin kategorisini tespit et ve varsayılan filtre yap
+  // Açıldığında kategori ve arama sıfırlama
   useEffect(() => {
-    if (isOpen && currentDish) {
+    if (isOpen) {
       setSearch('');
-      const norm = normalizeVisualName(currentDish);
-      const matchedMeal = availableMeals.find(
-        (m) => normalizeVisualName(m.name) === norm
-      );
 
-      if (matchedMeal) {
-        setSelectedCategory(matchedMeal.category);
-      } else if (norm.includes('corba')) {
-        setSelectedCategory('corba');
-      } else if (norm.includes('pilav') || norm.includes('makarna') || norm.includes('borek')) {
-        setSelectedCategory('yan_yemek');
-      } else if (norm.includes('tatli') || norm.includes('pasta') || norm.includes('kek') || norm.includes('baklava')) {
-        setSelectedCategory('tatli');
-      } else if (norm.includes('salata') || norm.includes('cacik')) {
-        setSelectedCategory('salata');
+      if (mode === 'swap' && currentDish) {
+        const norm = normalizeVisualName(currentDish);
+        const matchedMeal = availableMeals.find(
+          (m) => normalizeVisualName(m.name) === norm
+        );
+
+        if (matchedMeal) {
+          setSelectedCategory(matchedMeal.category);
+        } else if (norm.includes('corba')) {
+          setSelectedCategory('corba');
+        } else if (norm.includes('pilav') || norm.includes('makarna') || norm.includes('borek')) {
+          setSelectedCategory('yan_yemek');
+        } else if (norm.includes('tatli') || norm.includes('pasta') || norm.includes('kek') || norm.includes('baklava')) {
+          setSelectedCategory('tatli');
+        } else if (norm.includes('salata') || norm.includes('cacik')) {
+          setSelectedCategory('salata');
+        } else {
+          setSelectedCategory('all');
+        }
       } else {
         setSelectedCategory('all');
       }
     }
-  }, [isOpen, currentDish, availableMeals]);
+  }, [isOpen, mode, currentDish, availableMeals]);
 
   // Konum hesaplama (Ekran dışına taşmaması için hassas ayar)
   useEffect(() => {
     if (!isOpen || !anchorRect) return;
 
-    const popoverWidth = Math.min(380, window.innerWidth - 24);
+    const popoverWidth = Math.min(390, window.innerWidth - 24);
     let left = anchorRect.left;
 
     // Sağa taşmayı engelle
@@ -98,7 +109,7 @@ export default function DishSwapPopover({
     if (left < 12) left = 12;
 
     let top = anchorRect.bottom + 6;
-    const estimatedHeight = 440;
+    const estimatedHeight = 470;
 
     // Aşağıya taşmayı engelle, gerekirse butonun üstüne aç
     if (top + estimatedHeight > window.innerHeight && anchorRect.top > estimatedHeight + 10) {
@@ -168,18 +179,27 @@ export default function DishSwapPopover({
           left: `${coords.left}px`,
           width: `${coords.width}px`,
         }}
-        className="fixed z-50 pointer-events-auto bg-white rounded-2xl shadow-2xl border border-stone-200 text-stone-800 flex flex-col max-h-[460px] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+        className="fixed z-50 pointer-events-auto bg-white rounded-2xl shadow-2xl border border-stone-200 text-stone-800 flex flex-col max-h-[480px] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
       >
-        {/* Başlık ve Değiştirilen Yemek Bilgisi */}
+        {/* Başlık Bölümü */}
         <div className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-stone-200 flex items-center justify-between">
           <div className="min-w-0 flex-1 mr-2">
             <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-amber-800">
-              <span>🔄</span>
-              <span>Yemek Değiştir</span>
+              <span>{mode === 'add' ? '➕' : '🔄'}</span>
+              <span>{mode === 'add' ? 'Güne Yemek Ekle' : 'Yemek Değiştir'}</span>
             </div>
-            <p className="text-xs font-black text-stone-900 truncate mt-0.5" title={currentDish}>
-              Mevcut: <span className="text-amber-700 bg-amber-100/70 px-1.5 py-0.5 rounded-md">{currentDish}</span>
-            </p>
+
+            {mode === 'swap' && currentDish && (
+              <p className="text-xs font-black text-stone-900 truncate mt-0.5" title={currentDish}>
+                Mevcut: <span className="text-amber-700 bg-amber-100/70 px-1.5 py-0.5 rounded-md">{currentDish}</span>
+              </p>
+            )}
+
+            {mode === 'add' && title && (
+              <p className="text-xs font-black text-stone-900 truncate mt-0.5" title={title}>
+                {title}
+              </p>
+            )}
           </div>
 
           <button
@@ -201,7 +221,7 @@ export default function DishSwapPopover({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Yemek ara... (örn: Köfte, Çorba, Pilav)"
+              placeholder="Yemek ara... (örn: Köfte, Çorba, Pilav, Tatlı)"
               className="w-full pl-9 pr-8 py-2 rounded-xl bg-stone-50 border border-stone-200 text-xs font-bold text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all"
             />
             {search && (
@@ -251,18 +271,29 @@ export default function DishSwapPopover({
                   type="button"
                   onClick={() => {
                     onSelect(search.trim());
-                    onClose();
+                    if (mode === 'swap') onClose();
                   }}
                   className="mt-2 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold transition-all shadow-xs cursor-pointer inline-flex items-center gap-1"
                 >
                   <span>✨</span>
-                  <span>Bu isimle değiştir: &quot;{search.trim()}&quot;</span>
+                  <span>
+                    Bu isimle {mode === 'add' ? 'menüye ekle' : 'değiştir'}: &quot;{search.trim()}&quot;
+                  </span>
                 </button>
               )}
             </div>
           ) : (
             filteredMeals.map((meal) => {
-              const isCurrent = normalizeVisualName(meal.name) === normalizeVisualName(currentDish);
+              const isCurrent =
+                mode === 'swap' &&
+                normalizeVisualName(meal.name) === normalizeVisualName(currentDish);
+
+              const isAlreadyInMenu =
+                mode === 'add' &&
+                currentDishes.some(
+                  (d) => normalizeVisualName(d) === normalizeVisualName(meal.name)
+                );
+
               const imgUrl = getDishImageUrl(meal.name, meal.category, meal.imageUrl);
               const cal = meal.calories ?? getMealCalories(meal.name, meal.category);
               const tagColor = CATEGORY_TAG_COLORS[meal.category] || 'bg-stone-100 text-stone-800';
@@ -273,10 +304,12 @@ export default function DishSwapPopover({
                   type="button"
                   onClick={() => {
                     onSelect(meal.name);
-                    onClose();
+                    if (mode === 'swap') {
+                      onClose();
+                    }
                   }}
                   className={`w-full p-2 rounded-xl flex items-center gap-2.5 transition-all text-left group cursor-pointer ${
-                    isCurrent
+                    isCurrent || isAlreadyInMenu
                       ? 'bg-amber-50/70 border border-amber-200'
                       : 'hover:bg-stone-50 border border-transparent hover:border-stone-200'
                   }`}
@@ -308,6 +341,11 @@ export default function DishSwapPopover({
                           Şu anki
                         </span>
                       )}
+                      {isAlreadyInMenu && (
+                        <span className="text-[10px] font-black text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded-sm flex-shrink-0">
+                          ✓ Menüde Ekli
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5 text-[10px]">
                       <span className={`px-1.5 py-0.2 rounded-md font-bold border ${tagColor}`}>
@@ -322,9 +360,17 @@ export default function DishSwapPopover({
                     </div>
                   </div>
 
-                  {/* Seçim Aksiyonu */}
-                  <span className="text-stone-300 group-hover:text-amber-600 font-black text-xs transition-colors flex-shrink-0 px-1">
-                    ↳
+                  {/* Seçim Aksiyon Butonu */}
+                  <span
+                    className={`font-black text-xs transition-colors flex-shrink-0 px-2 py-1 rounded-lg ${
+                      mode === 'add'
+                        ? isAlreadyInMenu
+                          ? 'text-emerald-700 bg-emerald-50 text-[11px]'
+                          : 'text-amber-700 bg-amber-100/70 group-hover:bg-amber-200 text-[11px]'
+                        : 'text-stone-300 group-hover:text-amber-600'
+                    }`}
+                  >
+                    {mode === 'add' ? (isAlreadyInMenu ? '+ Tekrar Ekle' : '+ Ekle') : '↳ Değiştir'}
                   </span>
                 </button>
               );
@@ -332,10 +378,16 @@ export default function DishSwapPopover({
           )}
         </div>
 
-        {/* Alt Bilgi */}
-        <div className="px-3 py-2 bg-stone-50 border-t border-stone-200 text-[11px] text-stone-400 flex items-center justify-between font-medium">
-          <span>Toplam {filteredMeals.length} yemek listeleniyor</span>
-          <span className="text-[10px]">Seçmek için yemeğe tıklayın</span>
+        {/* Alt Bilgi & Tamamla Butonu */}
+        <div className="px-3 py-2 bg-stone-50 border-t border-stone-200 text-[11px] text-stone-500 flex items-center justify-between font-medium">
+          <span>{filteredMeals.length} yemek listeleniyor</span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-3 py-1 rounded-lg bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs transition-colors cursor-pointer shadow-2xs"
+          >
+            {mode === 'add' ? '✓ Tamamla' : 'Kapat'}
+          </button>
         </div>
       </div>
     </div>
