@@ -11,9 +11,24 @@ interface VersionItem {
 
 const VERSION_HISTORY: VersionItem[] = [
   {
+    version: 'v1.4.0',
+    date: '22 Eylül 2026',
+    isCurrent: true,
+    changes: [
+      'Kapsamlı Responsive (Mobil & Tablet) Arayüzü: Tüm kullanıcı ve yönetici ekranları akıllı telefon ve tablet ekranlarına %100 duyarlı hale getirildi.',
+      'Mobil Yönetici Gezinme Çubuğu (AdminNavbar): Mobilde parmakla rahat basılabilen (minimum 44px dokunma alanı) ve aktif sayfayı vurgulayan mobil navigasyon çubuğu eklendi.',
+      'Yemek Seçme ve Değiştirme Açılır Menüsü (DishSwapPopover): Menüdeki yemekleri değiştirme (🔄) veya "+ Yemek Seç / Ekle" butonuyla yeni yemek ekleme işlemleri için anlık arama kutucuklu ve kategori filtreli akıllı açılır menü geliştirildi.',
+      'Mobilde Alttan Açılan Eylem Sayfası (Bottom Sheet): Mobil cihazlarda popover pencereleri ekranın altından yukarı doğru kayarak açılan dokunmatik bir panele dönüştürüldü.',
+      'Yemekler Sayfası Mobil Kart Görünümü: Admin yemek yönetiminde yatay tablo kaydırma zorunluluğu kaldırılarak mobilde büyük fotoğraflı, kategori ve kalori rozetli, tek dokunuşla Düzenle/Sil yapılabilen pratik Mobil Yemek Kartları geliştirildi.',
+      '20\'şerli Sayfalama Sistemi: Yemek yönetiminde sayfa başına gösterim adedi 25\'ten 20\'ye düşürüldü; mobilde [Önceki] Sayfa X / Y [Sonraki] kompakt gezinme çubuğu sağlandı.',
+      'Aylık Takvim Mobil Görünüm Tercihi: Mobilde kullanıcıların yatay kaydırma yapmadan tüm ayı inceleyebilmesi için "📋 Hafta Hafta Liste" ve "📅 6 Günlük Tablo" arasında tek tıkla geçiş yapabilen görünüm seçici eklendi.',
+      'Yazdırma ve PDF Penceresi Mobil Uyumu: Küçük ekranlarda butonların ekran dışına taşması engellenerek esnek dikey/yatay hizalama sağlandı.',
+      'Tüm Manuel Yemek Görsellerinin Arşivlenmesi & Senkronizasyonu: 145 adet yemek fotoğrafı public/dishes/*.jpg altında optimize edilip veritabanı ile eşitlendi; Vercel sunucusuz dağıtımında kalıcılığı sağlandı.',
+    ],
+  },
+  {
     version: 'v1.3.0',
     date: '21 Eylül 2026',
-    isCurrent: true,
     changes: [
       'Doğrudan Günün Menüsü Görünümü: Açılır pencereler (popover/modal) kaldırıldı; ana sayfa doğrudan bugünün zengin yemek kartlarıyla açılır.',
       'Günlük Ok Navigasyonu: Önceki ve sonraki günlere sağ-sol ok butonları ve klavye ok tuşları (← / →) ile akıcı geçiş sağlandı; tek tıkla "Bugün"e dönüş butonu eklendi.',
@@ -116,7 +131,7 @@ export default function Footer() {
 
           {/* 4. SÜRÜM BİLGİSİ & TIKLANABİLİR SÜRÜM GEÇMİŞİ */}
           <div className="pt-4 flex items-center justify-center gap-2 text-xs text-stone-400 font-medium">
-            <span className="text-stone-400 tracking-wide">Ata Lezzet v1.3.0</span>
+            <span className="text-stone-400 tracking-wide">Ata Lezzet v1.4.0</span>
             <span className="text-stone-300">|</span>
             <button
               type="button"
