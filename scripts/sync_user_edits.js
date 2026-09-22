@@ -181,7 +181,7 @@ export async function ensureDatabaseSeeded(client?: any) {
             month: plan.month,
             monthName: plan.monthName,
             entries: {
-              create: plan.entries.map((e) => ({
+              create: plan.entries.map((e: any) => ({
                 date: e.date,
                 dateStr: e.dateStr,
                 dayName: e.dayName,
