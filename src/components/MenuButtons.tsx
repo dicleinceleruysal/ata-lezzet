@@ -1315,15 +1315,6 @@ export default function MenuButtons() {
                                         </div>
                                         <div className="flex items-center gap-2 mt-0.5 text-[10px] text-stone-500 font-medium">
                                           <span>{meta?.label || 'Yemek'}</span>
-                                          {dishImg && (
-                                            <>
-                                              <span className="text-stone-300">•</span>
-                                              <span className="text-amber-600 font-bold flex items-center gap-0.5">
-                                                <CameraIcon className="w-2.5 h-2.5" />
-                                                <span>Fotoğraflı</span>
-                                              </span>
-                                            </>
-                                          )}
                                         </div>
                                       </div>
                                     </div>
