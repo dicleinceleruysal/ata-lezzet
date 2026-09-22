@@ -494,8 +494,8 @@ export default function MenuButtons() {
   // Excel (.xlsx) Olarak İndirme
   const handleExportExcel = useCallback(() => {
     if (!monthlyPlan) return;
-    exportMonthlyMenuToExcel(monthlyPlan.monthName, entries, getDishCalories);
-  }, [monthlyPlan, entries, getDishCalories]);
+    exportMonthlyMenuToExcel(monthlyPlan.monthName, entries, monthlyPlan.year, monthlyPlan.month);
+  }, [monthlyPlan, entries]);
 
   // Hafta grupları
   const weekGroups = useMemo(() => {
@@ -1359,7 +1359,8 @@ export default function MenuButtons() {
         onClose={() => setIsPrintModalOpen(false)}
         monthName={monthlyPlan?.monthName || 'Aylık'}
         entries={entries}
-        getCaloriesFn={getDishCalories}
+        year={monthlyPlan?.year}
+        month={monthlyPlan?.month}
       />
     </section>
   );

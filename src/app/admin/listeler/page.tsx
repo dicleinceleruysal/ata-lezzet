@@ -268,7 +268,7 @@ export default function AdminListelerPage() {
   const handleExportExcel = () => {
     const monthLabel = MONTHS_LIST.find((m) => m.value === selectedMonth)?.label || 'Menü';
     const monthTitle = `${monthLabel} ${selectedYear}`;
-    exportMonthlyMenuToExcel(monthTitle, monthlyEntries, (dish) => getMealCalories(dish));
+    exportMonthlyMenuToExcel(monthTitle, monthlyEntries, selectedYear, selectedMonth);
   };
 
   // Sihirbaz (Otomatik Oluşturucu) State
@@ -1732,7 +1732,8 @@ export default function AdminListelerPage() {
         onClose={() => setIsPrintModalOpen(false)}
         monthName={`${MONTHS_LIST.find((m) => m.value === selectedMonth)?.label || 'Menü'} ${selectedYear}`}
         entries={monthlyEntries}
-        getCaloriesFn={(dish) => getMealCalories(dish)}
+        year={selectedYear}
+        month={selectedMonth}
       />
     </div>
   );

@@ -1,14 +1,19 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { ExportMenuEntry, parseDishList, exportMonthlyMenuToExcel } from '@/lib/exportUtils';
+import {
+  ExportMenuEntry,
+  getFullMonthRows,
+  exportMonthlyMenuToExcel,
+} from '@/lib/exportUtils';
 
 interface PrintMenuModalProps {
   isOpen: boolean;
   onClose: () => void;
   monthName: string;
   entries: ExportMenuEntry[];
-  getCaloriesFn: (dish: string) => number;
+  year?: number;
+  month?: number;
 }
 
 export default function PrintMenuModal({
@@ -16,7 +21,8 @@ export default function PrintMenuModal({
   onClose,
   monthName,
   entries,
-  getCaloriesFn,
+  year,
+  month,
 }: PrintMenuModalProps) {
   // ESC ile kapatma
   useEffect(() => {
@@ -33,18 +39,21 @@ export default function PrintMenuModal({
 
   if (!isOpen) return null;
 
+  // Görseldeki şablonu üret
+  const { title, rows } = getFullMonthRows(monthName, entries, year, month);
+
   const handlePrint = () => {
     window.print();
   };
 
   const handleExcel = () => {
-    exportMonthlyMenuToExcel(monthName, entries, getCaloriesFn);
+    exportMonthlyMenuToExcel(monthName, entries, year, month);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto print:p-0 print:bg-transparent print:static">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto print:p-0 print:bg-transparent print:static print:overflow-visible">
       {/* Modal Kutusu */}
-      <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden border border-stone-200 print:max-w-none print:max-h-none print:shadow-none print:border-none print:rounded-none">
+      <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-[94vh] overflow-hidden border border-stone-200 print:max-w-none print:max-h-none print:shadow-none print:border-none print:rounded-none print:overflow-visible">
         
         {/* Üst Eylem Çubuğu (Yazdırmada Gizlenir) */}
         <div className="flex items-center justify-between px-5 py-3.5 bg-stone-900 text-white print:hidden">
@@ -55,7 +64,7 @@ export default function PrintMenuModal({
                 Yazdırma ve Dışa Aktarma Önizlemesi
               </h3>
               <p className="text-[11px] text-stone-400">
-                {monthName} Aylık Tabldot Yemek Menüsü
+                {title} (Standart Tablo Formatı)
               </p>
             </div>
           </div>
@@ -92,106 +101,48 @@ export default function PrintMenuModal({
           </div>
         </div>
 
-        {/* Yazdırılabilir Belge Alanı (A4 Formatı) */}
-        <div className="p-4 sm:p-8 overflow-y-auto flex-1 bg-stone-50 print:bg-white print:p-0 print:overflow-visible">
+        {/* Önizleme & Yazdırılabilir Belge Alanı */}
+        <div className="p-4 sm:p-8 overflow-y-auto flex-1 bg-stone-100 print:bg-white print:p-0 print:overflow-visible">
           <div
             id="printable-menu-document"
-            className="bg-white p-6 sm:p-8 rounded-2xl shadow-xs border border-stone-200 max-w-4xl mx-auto text-stone-900 print:shadow-none print:border-none print:p-0 print:max-w-none"
+            className="bg-white p-6 sm:p-8 rounded-xl shadow-xs border border-stone-200 max-w-3xl mx-auto text-black print:shadow-none print:border-none print:p-0 print:max-w-none print:m-0"
           >
-            {/* Yazdırma Belge Başlığı */}
-            <div className="flex items-center justify-between border-b-2 border-stone-800 pb-4 mb-4">
-              <div className="flex items-center gap-3">
-                <img
-                  src="/ata-lezzet-logo.jpg"
-                  alt="Ata Lezzet"
-                  className="w-12 h-12 rounded-xl object-cover border border-amber-300"
-                />
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-black text-stone-950 tracking-tight uppercase">
-                    Ata Lezzet Tabldot Yemek Menüsü
-                  </h1>
-                  <p className="text-xs text-stone-600 font-semibold">
-                    Sağlıklı, Hijyenik ve Dengeli Toplu Beslenme Hizmetleri
-                  </p>
-                </div>
-              </div>
+            {/* Tablo Başlığı (Görseldeki gibi: "AĞUSTOS AYI YEMEK LİSTESİ") */}
+            <h1 className="text-base sm:text-xl font-black text-center text-black tracking-wide uppercase mb-3 sm:mb-4">
+              {title}
+            </h1>
 
-              <div className="text-right">
-                <span className="inline-block px-3 py-1 rounded-lg bg-stone-900 text-white font-black text-xs uppercase tracking-wider">
-                  {monthName}
-                </span>
-                <p className="text-[10px] text-stone-500 font-medium mt-1">
-                  Pazar günleri hariçtir
-                </p>
-              </div>
-            </div>
+            {/* 2 Sütunlu Çerçeveli Standart Menü Tablosu */}
+            <table className="w-full border-collapse border-2 border-black text-black text-left">
+              <thead>
+                <tr className="bg-white">
+                  <th className="border-2 border-black py-1.5 sm:py-2 px-2.5 sm:px-3 text-center font-black text-xs sm:text-sm tracking-wider uppercase w-[32%]">
+                    TARİH
+                  </th>
+                  <th className="border-2 border-black py-1.5 sm:py-2 px-2.5 sm:px-3 text-center font-black text-xs sm:text-sm tracking-wider uppercase w-[68%]">
+                    ÖĞLE YEMEĞİ
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr
+                    key={row.dayNumber}
+                    className="border-b border-black hover:bg-amber-50/20 print:hover:bg-transparent page-break-inside-avoid"
+                  >
+                    {/* Tarih Sütunu */}
+                    <td className="border border-black py-1 px-2 font-bold text-[10.5px] sm:text-xs text-black whitespace-nowrap align-middle">
+                      {row.dateStr}
+                    </td>
 
-            {/* Menü Tablosu */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="bg-stone-900 text-white text-[11px] uppercase tracking-wider font-extrabold print:bg-stone-900 print:text-white">
-                    <th className="py-2.5 px-3 border border-stone-800 w-24">Tarih</th>
-                    <th className="py-2.5 px-3 border border-stone-800 w-20">Gün</th>
-                    <th className="py-2.5 px-3 border border-stone-800">Menü İçeriği (Yemekler)</th>
-                    <th className="py-2.5 px-3 border border-stone-800 text-right w-24">Kalori</th>
+                    {/* Öğle Yemeği Sütunu (Pazar günleri boş, hafta içi büyük harf ve virgülle ayrılmış) */}
+                    <td className="border border-black py-1 px-2 font-bold text-[10.5px] sm:text-xs text-black uppercase leading-tight align-middle">
+                      {row.mealTextUpper || '\u00A0'}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-200">
-                  {entries.map((entry, idx) => {
-                    const dishes = parseDishList(entry.items, entry.mealText);
-                    const totalCal = dishes.reduce((sum, d) => sum + getCaloriesFn(d), 0);
-                    const isEven = idx % 2 === 0;
-
-                    return (
-                      <tr
-                        key={entry.id || idx}
-                        className={`${isEven ? 'bg-white' : 'bg-stone-50/80'} hover:bg-amber-50/40 print:hover:bg-transparent page-break-inside-avoid`}
-                      >
-                        <td className="py-2 px-3 font-bold text-stone-900 border border-stone-200 whitespace-nowrap">
-                          {entry.dateStr}
-                        </td>
-                        <td className="py-2 px-3 font-semibold text-stone-700 border border-stone-200 whitespace-nowrap">
-                          {entry.dayName}
-                        </td>
-                        <td className="py-2 px-3 font-medium text-stone-900 border border-stone-200 leading-snug">
-                          {dishes.length > 0 ? (
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {dishes.map((dish, dIdx) => (
-                                <span key={dIdx} className="inline-flex items-center">
-                                  <span className="font-semibold text-stone-900">{dish}</span>
-                                  {dIdx < dishes.length - 1 && (
-                                    <span className="text-amber-500 font-bold mx-1">·</span>
-                                  )}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            entry.mealText || '-'
-                          )}
-                        </td>
-                        <td className="py-2 px-3 font-bold text-stone-900 border border-stone-200 text-right whitespace-nowrap">
-                          {totalCal > 0 ? `${totalCal} kcal` : '-'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Alt Bilgi & İmza Alanı */}
-            <div className="mt-6 pt-4 border-t-2 border-stone-300 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-stone-500 font-medium">
-              <div>
-                <p>📌 Menü içeriği tedarik koşulları ve mevsimsel durumlara göre değişiklik gösterebilir.</p>
-                <p>Afiyet olsun! Ata Lezzet Yemekhane Hizmetleri</p>
-              </div>
-
-              <div className="text-right print:block hidden">
-                <p className="font-bold text-stone-700">Diyetisyen / Gıda Mühendisi Onayı</p>
-                <p className="mt-6 border-t border-stone-400 pt-1 text-[10px]">İmza / Kaşe</p>
-              </div>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
