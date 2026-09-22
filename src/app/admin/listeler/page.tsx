@@ -10,6 +10,8 @@ import {
   getSideSubType,
 } from '@/lib/mealRules';
 import { getMealCalories } from '@/lib/mealCalories';
+import PrintMenuModal from '@/components/PrintMenuModal';
+import { exportMonthlyMenuToExcel } from '@/lib/exportUtils';
 
 interface MealItem {
   id: string;
@@ -259,6 +261,15 @@ export default function AdminListelerPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Yazdırma ve Excel Durumu
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+
+  const handleExportExcel = () => {
+    const monthLabel = MONTHS_LIST.find((m) => m.value === selectedMonth)?.label || 'Menü';
+    const monthTitle = `${monthLabel} ${selectedYear}`;
+    exportMonthlyMenuToExcel(monthTitle, monthlyEntries, (dish) => getMealCalories(dish));
+  };
 
   // Sihirbaz (Otomatik Oluşturucu) State
   const [wizardYear, setWizardYear] = useState<number>(2026);
@@ -976,7 +987,29 @@ export default function AdminListelerPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+              <button
+                type="button"
+                onClick={handleExportExcel}
+                disabled={monthlyEntries.length === 0}
+                className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors cursor-pointer border border-emerald-200 flex items-center gap-1.5 disabled:opacity-40"
+                title="Aylık menüyü Excel (.xlsx) formatında indir"
+              >
+                <span>📊</span>
+                <span>Excel İndir</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsPrintModalOpen(true)}
+                disabled={monthlyEntries.length === 0}
+                className="px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold transition-colors cursor-pointer border border-stone-300 flex items-center gap-1.5 disabled:opacity-40"
+                title="Aylık menüyü yazdır veya PDF olarak kaydet"
+              >
+                <span>🖨️</span>
+                <span>Yazdır / PDF</span>
+              </button>
+
               <button
                 type="button"
                 onClick={handleAddNewDay}
@@ -1692,6 +1725,15 @@ export default function AdminListelerPage() {
           );
         })()
       )}
+
+      {/* Aylık Menü Yazdırma ve PDF Modal */}
+      <PrintMenuModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        monthName={`${MONTHS_LIST.find((m) => m.value === selectedMonth)?.label || 'Menü'} ${selectedYear}`}
+        entries={monthlyEntries}
+        getCaloriesFn={(dish) => getMealCalories(dish)}
+      />
     </div>
   );
 }

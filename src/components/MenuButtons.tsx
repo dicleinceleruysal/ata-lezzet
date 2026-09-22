@@ -12,6 +12,8 @@ import {
 import { getMealCalories } from '@/lib/mealCalories';
 import { getDishImageUrl } from '@/lib/dishVisuals';
 import DailyMenuRating from './DailyMenuRating';
+import PrintMenuModal from './PrintMenuModal';
+import { exportMonthlyMenuToExcel } from '@/lib/exportUtils';
 
 export interface DailyMenuEntryData {
   id: string;
@@ -369,6 +371,9 @@ export default function MenuButtons() {
     imageUrl: string | null;
   } | null>(null);
 
+  // Yazdırma ve PDF Modal Durumu
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+
   // Veritabanı yemek, kalori ve görsel haritasını çek
   useEffect(() => {
     fetch('/api/meals')
@@ -485,6 +490,12 @@ export default function MenuButtons() {
 
   const entries = monthlyPlan?.entries || [];
   const currentEntry = entries[currentIndex] || null;
+
+  // Excel (.xlsx) Olarak İndirme
+  const handleExportExcel = useCallback(() => {
+    if (!monthlyPlan) return;
+    exportMonthlyMenuToExcel(monthlyPlan.monthName, entries, getDishCalories);
+  }, [monthlyPlan, entries, getDishCalories]);
 
   // Hafta grupları
   const weekGroups = useMemo(() => {
@@ -879,13 +890,36 @@ export default function MenuButtons() {
                 return (
                   <>
                     <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-amber-50/60 border border-amber-100">
-                      <span className="text-xs font-black uppercase tracking-wider text-amber-900 bg-white px-3 py-1 rounded-lg border border-amber-200 shadow-2xs">
-                        🍴 {currentDishes.length} Çeşit Yemek
-                      </span>
-                      <span className="text-xs font-black uppercase tracking-wider text-emerald-950 bg-emerald-100 px-3 py-1 rounded-lg border border-emerald-300 shadow-2xs flex items-center gap-1.5">
-                        <span>🔥</span>
-                        <span>Toplam: {totalCalories} kcal</span>
-                      </span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-black uppercase tracking-wider text-amber-900 bg-white px-3 py-1 rounded-lg border border-amber-200 shadow-2xs">
+                          🍴 {currentDishes.length} Çeşit Yemek
+                        </span>
+                        <span className="text-xs font-black uppercase tracking-wider text-emerald-950 bg-emerald-100 px-3 py-1 rounded-lg border border-emerald-300 shadow-2xs flex items-center gap-1.5">
+                          <span>🔥</span>
+                          <span>Toplam: {totalCalories} kcal</span>
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setIsPrintModalOpen(true)}
+                          className="px-2.5 py-1 rounded-lg bg-white hover:bg-stone-100 text-stone-800 font-bold text-xs border border-stone-200 shadow-2xs flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Menüyü yazdır veya PDF olarak kaydet"
+                        >
+                          <span>🖨️</span>
+                          <span className="hidden sm:inline">Yazdır / PDF</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleExportExcel}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200 shadow-2xs flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Aylık menüyü Excel (.xlsx) olarak indir"
+                        >
+                          <span>📊</span>
+                          <span className="hidden sm:inline">Excel</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Fotoğraflı Yemek Kartları Izgarası */}
@@ -1042,14 +1076,34 @@ export default function MenuButtons() {
                 </span>
               </div>
 
-              {/* Bugüne Git Butonu */}
-              <button
-                type="button"
-                onClick={handleGoToToday}
-                className="text-xs font-black text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-xl border border-amber-200 transition-colors cursor-pointer ml-auto"
-              >
-                🍽️ Günün Menüsüne Git
-              </button>
+              {/* Dışa Aktarma & Bugüne Git Butonları */}
+              <div className="flex items-center gap-2 ml-auto flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleExportExcel}
+                  className="text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-200 transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                  title="Aylık yemek menüsünü Excel (.xlsx) olarak indir"
+                >
+                  <span>📊</span>
+                  <span>Excel İndir</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPrintModalOpen(true)}
+                  className="text-xs font-bold text-stone-800 bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-xl border border-stone-300 transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                  title="Aylık yemek menüsünü yazdır veya PDF olarak kaydet"
+                >
+                  <span>🖨️</span>
+                  <span>Yazdır / PDF</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGoToToday}
+                  className="text-xs font-black text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-xl border border-amber-200 transition-colors cursor-pointer"
+                >
+                  🍽️ Günün Menüsüne Git
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1298,6 +1352,15 @@ export default function MenuButtons() {
           </div>
         </div>
       )}
+
+      {/* Aylık Menü Yazdırma ve PDF Modal */}
+      <PrintMenuModal
+        isOpen={isPrintModalOpen}
+        onClose={() => setIsPrintModalOpen(false)}
+        monthName={monthlyPlan?.monthName || 'Aylık'}
+        entries={entries}
+        getCaloriesFn={getDishCalories}
+      />
     </section>
   );
 }
