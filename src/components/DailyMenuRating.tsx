@@ -1,0 +1,169 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+
+interface DailyMenuRatingProps {
+  dateStr: string;
+}
+
+export default function DailyMenuRating({ dateStr }: DailyMenuRatingProps) {
+  const [average, setAverage] = useState<number>(0);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [userRating, setUserRating] = useState<number | null>(null);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [feedbackText, setFeedbackText] = useState<string | null>(null);
+
+  // Günün puanını ve kullanıcının geçmiş oyunu yükle
+  useEffect(() => {
+    if (!dateStr) return;
+
+    // LocalStorage kontrolü (kullanıcı daha önce bu güne oy verdi mi?)
+    const savedVote = localStorage.getItem(`rate_${dateStr}`);
+    if (savedVote) {
+      setUserRating(Number(savedVote));
+    } else {
+      setUserRating(null);
+    }
+    setFeedbackText(null);
+
+    // Sunucudan ortalama puanı çek
+    fetch(`/api/ratings?dateStr=${encodeURIComponent(dateStr)}`, { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.average === 'number') {
+          setAverage(data.average);
+          setTotalCount(data.totalCount || 0);
+        }
+      })
+      .catch(() => {});
+  }, [dateStr]);
+
+  const handleRate = async (score: number) => {
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    setUserRating(score);
+    localStorage.setItem(`rate_${dateStr}`, String(score));
+
+    try {
+      const res = await fetch('/api/ratings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dateStr, score }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data) {
+        setAverage(data.average);
+        setTotalCount(data.totalCount);
+        setFeedbackText(`Puanınız (${score}/5) kaydedildi. Teşekkürler!`);
+      } else {
+        setFeedbackText('Puan kaydedildi.');
+      }
+    } catch {
+      setFeedbackText('Puan kaydedildi.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getScoreLabel = (score: number) => {
+    switch (score) {
+      case 1:
+        return 'Geliştirilmeli';
+      case 2:
+        return 'Orta';
+      case 3:
+        return 'İyi';
+      case 4:
+        return 'Çok İyi';
+      case 5:
+        return 'Harika!';
+      default:
+        return '';
+    }
+  };
+
+  const activeStarCount = hoverRating || userRating || 0;
+
+  return (
+    <div className="w-full bg-gradient-to-r from-amber-50/90 via-orange-50/70 to-amber-50/90 p-4 sm:p-5 rounded-2xl border border-amber-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 transition-all">
+      {/* Sol Başlık & Bilgi */}
+      <div className="text-center sm:text-left">
+        <div className="flex items-center justify-center sm:justify-start gap-2">
+          <span className="text-xl">⭐</span>
+          <h3 className="text-sm sm:text-base font-black text-stone-900 tracking-tight">
+            Günün Menüsünü Değerlendirin
+          </h3>
+        </div>
+        <p className="text-xs text-stone-500 font-medium mt-0.5">
+          {totalCount > 0 ? (
+            <span className="flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">
+              <span className="font-bold text-amber-700">★ {average.toFixed(1)} / 5</span>
+              <span className="text-stone-400">·</span>
+              <span className="text-stone-600 font-semibold">{totalCount} Değerlendirme</span>
+            </span>
+          ) : (
+            'Bugünkü yemekleri nasıl buldunuz? Yıldızlara tıklayarak puan verin.'
+          )}
+        </p>
+      </div>
+
+      {/* Sağ 5 Yıldız Alanı */}
+      <div className="flex flex-col items-center sm:items-end gap-1">
+        <div className="flex items-center gap-1.5">
+          {[1, 2, 3, 4, 5].map((star) => {
+            const isFilled = star <= activeStarCount;
+            return (
+              <button
+                key={star}
+                type="button"
+                onClick={() => handleRate(star)}
+                onMouseEnter={() => setHoverRating(star)}
+                onMouseLeave={() => setHoverRating(null)}
+                disabled={isSubmitting}
+                className="p-1 text-2xl sm:text-3xl transition-transform hover:scale-125 active:scale-90 cursor-pointer disabled:cursor-not-allowed select-none focus:outline-none"
+                title={`${star} Yıldız - ${getScoreLabel(star)}`}
+                aria-label={`${star} Yıldız`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  className={`w-7 h-7 sm:w-8 sm:h-8 transition-colors ${
+                    isFilled
+                      ? 'fill-amber-400 text-amber-400 drop-shadow-xs'
+                      : 'fill-stone-200 text-stone-300'
+                  }`}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                    d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
+                  />
+                </svg>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Yıldız Açıklaması veya Teşekkür Mesajı */}
+        <div className="h-4 text-[11px] font-bold text-center sm:text-right">
+          {feedbackText ? (
+            <span className="text-emerald-700 animate-in fade-in">✨ {feedbackText}</span>
+          ) : hoverRating ? (
+            <span className="text-amber-700">
+              {hoverRating} Yıldız - {getScoreLabel(hoverRating)}
+            </span>
+          ) : userRating ? (
+            <span className="text-amber-800/80">Verdiğiniz Puan: {userRating} Yıldız</span>
+          ) : (
+            <span className="text-stone-400">Puanınızı seçin (1 - 5)</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

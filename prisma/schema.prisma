@@ -86,3 +86,12 @@ model UserNote {
   status    String   @default("pending") // pending, reviewed, archived
   createdAt DateTime @default(now())
 }
+
+model MenuRating {
+  id        String   @id @default(cuid())
+  dateStr   String   // e.g. "22 Eylül 2026"
+  score     Int      // 1..5
+  createdAt DateTime @default(now())
+
+  @@index([dateStr])
+}

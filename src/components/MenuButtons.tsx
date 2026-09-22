@@ -11,6 +11,7 @@ import {
 } from './PixarIcons';
 import { getMealCalories } from '@/lib/mealCalories';
 import { getDishImageUrl } from '@/lib/dishVisuals';
+import DailyMenuRating from './DailyMenuRating';
 
 export interface DailyMenuEntryData {
   id: string;
@@ -970,6 +971,9 @@ export default function MenuButtons() {
                         Sağlıklı & Dengeli Tabldot Öğünü
                       </div>
                     </div>
+
+                    {/* Günün Menüsünü 5 Yıldız ile Puanlama */}
+                    <DailyMenuRating dateStr={currentEntry.dateStr} />
                   </>
                 );
               })()}
