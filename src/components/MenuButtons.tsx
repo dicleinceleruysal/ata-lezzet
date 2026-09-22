@@ -1108,39 +1108,34 @@ export default function MenuButtons() {
 
           {/* 6 Günlük Takvim Izgarası (Pazartesi - Cumartesi) */}
           <div className="bg-white rounded-3xl p-4 sm:p-6 border-2 border-amber-200/90 shadow-sm space-y-4">
-            {/* Görünüm Seçici ve Hafta Filtreleri (Hem Masaüstü Hem Mobil) */}
-            <div className="space-y-3">
+            {/* Görünüm Seçici ve Hafta Filtreleri (Sadece Mobilde Görünür) */}
+            <div className="md:hidden space-y-3">
               {/* Görünüm Geçiş Düğmesi (Segmented Control) */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-1.5 bg-stone-100/90 rounded-2xl border border-stone-200/90">
-                <div className="flex items-center gap-1.5 flex-1">
-                  <button
-                    type="button"
-                    onClick={() => setCalendarViewMode('cards')}
-                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                      calendarViewMode === 'cards'
-                        ? 'bg-white text-stone-900 shadow-xs border border-stone-200/80'
-                        : 'text-stone-500 hover:text-stone-800'
-                    }`}
-                  >
-                    <span>📋</span>
-                    <span>Modern Fotoğraflı Liste</span>
-                    <span className="text-[10px] text-amber-800 bg-amber-100/80 border border-amber-200 px-1.5 py-0.2 rounded font-bold">
-                      Görselli
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCalendarViewMode('grid')}
-                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                      calendarViewMode === 'grid'
-                        ? 'bg-white text-stone-900 shadow-xs border border-stone-200/80'
-                        : 'text-stone-500 hover:text-stone-800'
-                    }`}
-                  >
-                    <span>📅</span>
-                    <span>6 Günlük Takvim Tablosu</span>
-                  </button>
-                </div>
+              <div className="flex items-center justify-between gap-2 p-1 bg-stone-100/90 rounded-2xl border border-stone-200/90">
+                <button
+                  type="button"
+                  onClick={() => setCalendarViewMode('cards')}
+                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    calendarViewMode === 'cards'
+                      ? 'bg-white text-stone-900 shadow-xs border border-stone-200/80'
+                      : 'text-stone-500 hover:text-stone-800'
+                  }`}
+                >
+                  <span>📋</span>
+                  <span>Modern Liste</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCalendarViewMode('grid')}
+                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    calendarViewMode === 'grid'
+                      ? 'bg-white text-stone-900 shadow-xs border border-stone-200/80'
+                      : 'text-stone-500 hover:text-stone-800'
+                  }`}
+                >
+                  <span>📅</span>
+                  <span>6 Günlük Tablo</span>
+                </button>
               </div>
 
               {/* Hafta Filtreleri (Sadece Liste modunda hızlı gezinme) */}
@@ -1155,7 +1150,7 @@ export default function MenuButtons() {
                         : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                     }`}
                   >
-                    Tüm Ay ({entries.length} Gün)
+                    Tüm Ay
                   </button>
                   {weekGroups.map((wg) => {
                     const isSelected = selectedWeekFilter === wg.weekNumber;
@@ -1187,9 +1182,9 @@ export default function MenuButtons() {
               )}
             </div>
 
-            {/* Modern Hafta Hafta Fotoğraflı Liste Görünümü (Hem Masaüstü Hem Mobilde Mükemmel Kart Düzeni) */}
+            {/* Mobilde Modern Hafta Hafta Fotoğraflı Liste Görünümü */}
             {calendarViewMode === 'cards' && (
-              <div className="space-y-6">
+              <div className="md:hidden space-y-5">
                 {displayedWeekGroups.length === 0 ? (
                   <div className="py-8 text-center text-stone-400 font-bold text-xs bg-stone-50 rounded-2xl border border-stone-200">
                     Aramanıza uygun gün bulunamadı.
@@ -1351,7 +1346,7 @@ export default function MenuButtons() {
               </div>
             )}
 
-            <div className={`${calendarViewMode === 'grid' ? 'block' : 'hidden'} overflow-x-auto pb-2 scrollbar-thin`}>
+            <div className={`${calendarViewMode === 'grid' ? 'block' : 'hidden md:block'} overflow-x-auto pb-2 scrollbar-thin`}>
               <div className="min-w-[720px]">
                 {/* 6 Sütun Gün Başlıkları */}
                 <div className="grid grid-cols-6 gap-2 mb-2.5">
