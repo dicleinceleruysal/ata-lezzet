@@ -31,3 +31,10 @@ body {
     0 16px 32px -4px rgba(245, 158, 11, 0.16),
     0 10px 14px -6px rgba(0, 0, 0, 0.06);
 }
+
+/* Sayfa Yazdırma İzolasyonu: Web sitesinin kendisi ASLA yazıcıya gitmez */
+@media print {
+  body > * {
+    display: none !important;
+  }
+}

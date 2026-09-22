@@ -5,6 +5,7 @@ import {
   ExportMenuEntry,
   getFullMonthRows,
   exportMonthlyMenuToExcel,
+  printMenuDocument,
 } from '@/lib/exportUtils';
 
 interface PrintMenuModalProps {
@@ -43,7 +44,7 @@ export default function PrintMenuModal({
   const { title, rows } = getFullMonthRows(monthName, entries, year, month);
 
   const handlePrint = () => {
-    window.print();
+    printMenuDocument(monthName, entries, year, month);
   };
 
   const handleExcel = () => {

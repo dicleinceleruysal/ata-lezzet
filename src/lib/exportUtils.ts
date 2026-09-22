@@ -225,3 +225,163 @@ export function exportMonthlyMenuToExcel(
   const safeFilename = `${title.replace(/\s+/g, '_')}.xlsx`;
   XLSX.writeFile(wb, safeFilename);
 }
+
+/**
+ * Kullanıcı görselindeki formatta izole bir iframe içinde SADECE tabloyu yazdırır.
+ * Web sayfasının diğer kısımları, butonlar, menüler veya arka plan KESİNLİKLE yazıcıya/PDF'e gitmez.
+ */
+export function printMenuDocument(
+  monthName: string,
+  entries: ExportMenuEntry[],
+  year?: number,
+  month?: number
+) {
+  if (typeof window === 'undefined') return;
+
+  const { title, rows } = getFullMonthRows(monthName, entries, year, month);
+
+  const rowsHtml = rows
+    .map(
+      (r) => `
+      <tr>
+        <td class="date-col">${r.dateStr}</td>
+        <td class="meal-col">${r.mealTextUpper || '&nbsp;'}</td>
+      </tr>
+    `
+    )
+    .join('');
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="tr">
+      <head>
+        <meta charset="UTF-8">
+        <title>${title}</title>
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 8mm 10mm;
+          }
+          * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          body {
+            font-family: Arial, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #000 !important;
+            background: #fff !important;
+            padding: 0;
+            margin: 0;
+          }
+          .title {
+            text-align: center;
+            font-size: 15px;
+            font-weight: 900;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #000 !important;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 2px solid #000 !important;
+          }
+          th {
+            border: 2px solid #000 !important;
+            padding: 5px 6px;
+            text-align: center;
+            font-weight: 900;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #000 !important;
+            background-color: #fff !important;
+          }
+          td {
+            border: 1.5px solid #000 !important;
+            padding: 2.8px 6px;
+            font-size: 9.5px;
+            font-weight: bold;
+            line-height: 1.25;
+            color: #000 !important;
+            vertical-align: middle;
+            page-break-inside: avoid;
+          }
+          .date-col {
+            width: 30%;
+            white-space: nowrap;
+          }
+          .meal-col {
+            width: 70%;
+            text-transform: uppercase;
+          }
+        </style>
+      </head>
+      <body>
+        <h1 class="title">${title}</h1>
+        <table>
+          <thead>
+            <tr>
+              <th class="date-col">TARİH</th>
+              <th class="meal-col">ÖĞLE YEMEĞİ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </body>
+    </html>
+  `;
+
+  // Gizli bir iframe oluşturup izole şekilde yazdır
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = 'none';
+  iframe.style.opacity = '0';
+  iframe.style.pointerEvents = 'none';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow?.document;
+  if (!doc) {
+    // İframe erişilemezse yeni sekmede aç ve yazdır
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+    }
+    return;
+  }
+
+  doc.open();
+  doc.write(htmlContent);
+  doc.close();
+
+  setTimeout(() => {
+    try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    } catch (e) {
+      console.error('Yazdırma tetiklenirken hata:', e);
+    } finally {
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 3000);
+    }
+  }, 250);
+}
+
