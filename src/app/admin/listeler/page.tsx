@@ -972,7 +972,7 @@ export default function AdminListelerPage() {
 
       {/* 1. SEKME: GÜNLÜK YEMEK TABLOSU & VERİTABANINDAN YEMEK SEÇİMİ */}
       {activeTab === 'monthly' && (
-        <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden space-y-4 p-6">
+        <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden space-y-4 p-3.5 sm:p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div>
               <h2 className="text-lg font-black text-stone-900">
@@ -983,12 +983,12 @@ export default function AdminListelerPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={handleExportExcel}
                 disabled={monthlyEntries.length === 0}
-                className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors cursor-pointer border border-emerald-200 flex items-center gap-1.5 disabled:opacity-40"
+                className="justify-center px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors cursor-pointer border border-emerald-200 flex items-center gap-1.5 disabled:opacity-40"
                 title="Aylık menüyü Excel (.xlsx) formatında indir"
               >
                 <span>📊</span>
@@ -999,7 +999,7 @@ export default function AdminListelerPage() {
                 type="button"
                 onClick={() => setIsPrintModalOpen(true)}
                 disabled={monthlyEntries.length === 0}
-                className="px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold transition-colors cursor-pointer border border-stone-300 flex items-center gap-1.5 disabled:opacity-40"
+                className="justify-center px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold transition-colors cursor-pointer border border-stone-300 flex items-center gap-1.5 disabled:opacity-40"
                 title="Aylık menüyü yazdır veya PDF olarak kaydet"
               >
                 <span>🖨️</span>
@@ -1009,18 +1009,18 @@ export default function AdminListelerPage() {
               <button
                 type="button"
                 onClick={handleAddNewDay}
-                className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold transition-colors cursor-pointer border border-stone-300"
+                className="justify-center px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold transition-colors cursor-pointer border border-stone-300"
               >
-                + Yeni Gün Ekle
+                + Yeni Gün
               </button>
 
               <button
                 type="button"
                 onClick={handleSaveMonthlyPlan}
                 disabled={saving}
-                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-black transition-all shadow-xs disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                className="justify-center px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-black transition-all shadow-xs disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
               >
-                {saving ? 'Kaydediliyor...' : '💾 Listeyi Kaydet'}
+                {saving ? 'Kaydediliyor...' : '💾 Kaydet'}
               </button>
             </div>
           </div>
@@ -1048,7 +1048,8 @@ export default function AdminListelerPage() {
               </button>
             </div>
           ) : (
-            <div className="border border-stone-200 rounded-xl overflow-hidden">
+            <>
+              <div className="hidden md:block border border-stone-200 rounded-xl overflow-hidden">
               <div className="overflow-x-auto max-h-[62vh]">
                 <table className="w-full text-left border-collapse text-xs sm:text-sm">
                   <thead className="sticky top-0 z-10 bg-stone-100 border-b border-stone-200 text-stone-700 font-black text-[11px] uppercase tracking-wider">
@@ -1209,6 +1210,144 @@ export default function AdminListelerPage() {
                 </table>
               </div>
             </div>
+
+            {/* Mobil Gün Kartları (Ekran Genişliği < md) */}
+            <div className="md:hidden space-y-3">
+              {monthlyEntries.map((entry, index) => {
+                const dishes = entry.items || parseItems(entry.mealText);
+                const dayCalories = dishes.reduce((sum, d) => {
+                  const dbMeal = availableMeals.find((m) => m.name.toLowerCase() === d.toLowerCase());
+                  const cal = dbMeal?.calories ? dbMeal.calories : getMealCalories(d, dbMeal?.category);
+                  return sum + cal;
+                }, 0);
+
+                return (
+                  <div
+                    key={index}
+                    className="p-3.5 rounded-2xl bg-white border border-stone-200 shadow-2xs space-y-3"
+                  >
+                    {/* Üst Kısım: Tarih & Gün & Sil */}
+                    <div className="flex items-center justify-between gap-2 border-b border-stone-100 pb-2">
+                      <div className="flex-1 min-w-0">
+                        <input
+                          type="text"
+                          value={entry.dateStr}
+                          onChange={(e) => {
+                            const updated = [...monthlyEntries];
+                            updated[index].dateStr = e.target.value;
+                            setMonthlyEntries(updated);
+                          }}
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-stone-200 text-xs font-bold text-stone-900 focus:outline-none focus:border-amber-500 bg-stone-50"
+                        />
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[11px] font-bold text-stone-500">{entry.dayName}</span>
+                          {dayCalories > 0 && (
+                            <span className="text-[10px] font-black text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
+                              <span>🔥</span>
+                              <span>{dayCalories} kcal</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteEntry(index)}
+                        className="w-8 h-8 rounded-xl text-rose-500 hover:bg-rose-50 flex items-center justify-center font-bold text-sm transition-colors cursor-pointer flex-shrink-0"
+                        title="Günü Sil"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+
+                    {/* Yemek Rozetleri */}
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                      {dishes.map((dish, dIdx) => {
+                        const dbMeal = availableMeals.find(
+                          (m) => m.name.toLowerCase() === dish.toLowerCase()
+                        );
+                        const category = dbMeal ? dbMeal.category : autoDetectCategory(dish);
+                        const badgeColor = CATEGORY_COLORS[category] || 'bg-stone-100 text-stone-800 border-stone-300';
+                        const cal = dbMeal?.calories ? dbMeal.calories : getMealCalories(dish, category);
+
+                        return (
+                          <span
+                            key={dIdx}
+                            className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-lg border shadow-2xs group transition-all ${badgeColor}`}
+                          >
+                            <span
+                              onClick={(e) =>
+                                handleOpenSwap(
+                                  e as unknown as React.MouseEvent<HTMLButtonElement>,
+                                  'monthly',
+                                  index,
+                                  dIdx,
+                                  dish
+                                )
+                              }
+                              className="cursor-pointer hover:underline"
+                            >
+                              {dish}
+                            </span>
+                            <span className="opacity-80 font-black text-[10px]">({cal} kcal)</span>
+
+                            {/* Değiştir Butonu */}
+                            <button
+                              type="button"
+                              onClick={(e) => handleOpenSwap(e, 'monthly', index, dIdx, dish)}
+                              className="w-5 h-5 flex items-center justify-center rounded-md text-amber-700 hover:text-amber-950 hover:bg-amber-200/60 font-black text-xs transition-colors cursor-pointer"
+                              title="Değiştir"
+                            >
+                              🔄
+                            </button>
+
+                            {/* Kaldır Butonu */}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveDishFromDay(index, dIdx)}
+                              className="w-5 h-5 flex items-center justify-center rounded-md text-stone-400 hover:text-rose-600 hover:bg-rose-100/60 font-black text-xs transition-colors cursor-pointer"
+                              title="Kaldır"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        );
+                      })}
+
+                      <button
+                        type="button"
+                        onClick={(e) =>
+                          handleOpenAdd(
+                            e,
+                            'monthly',
+                            index,
+                            `${entry.dateStr} (${entry.dayName}) Menüsüne Yemek Ekle`
+                          )
+                        }
+                        className="inline-flex items-center gap-1 text-xs font-extrabold px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all shadow-xs cursor-pointer"
+                      >
+                        <span>+ Yemek Seç / Ekle</span>
+                      </button>
+                    </div>
+
+                    {/* Hızlı Metin Düzenleme */}
+                    <input
+                      type="text"
+                      value={entry.mealText}
+                      onChange={(e) => {
+                        const updated = [...monthlyEntries];
+                        updated[index].mealText = e.target.value;
+                        updated[index].items = parseItems(e.target.value);
+                        setMonthlyEntries(updated);
+                      }}
+                      placeholder="Virgülle ayırarak yemek yazın..."
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-stone-200 text-xs text-stone-700 focus:outline-none focus:border-amber-400 bg-stone-50/50"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </>
           )}
 
           {monthlyEntries.length > 0 && (
@@ -1339,7 +1478,7 @@ export default function AdminListelerPage() {
               </div>
 
               {/* Gün Gün Taslak Tablosu */}
-              <div className="border border-stone-200 rounded-2xl overflow-hidden bg-white shadow-xs">
+              <div className="hidden md:block border border-stone-200 rounded-2xl overflow-hidden bg-white shadow-xs">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-stone-100/90 text-stone-700 uppercase font-black tracking-wider text-[11px] border-b border-stone-200">
@@ -1478,6 +1617,129 @@ export default function AdminListelerPage() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+
+              {/* Mobil Wizard Gün Kartları (Ekran Genişliği < md) */}
+              <div className="md:hidden space-y-3">
+                {wizardEntries.map((entry, dayIdx) => {
+                  const items = entry.items || parseItems(entry.mealText);
+                  const dayCalories = items.reduce((sum, d) => {
+                    const dbMeal = availableMeals.find((m) => m.name.toLowerCase() === d.toLowerCase());
+                    const cal = dbMeal?.calories ? dbMeal.calories : getMealCalories(d, dbMeal?.category);
+                    return sum + cal;
+                  }, 0);
+
+                  return (
+                    <div
+                      key={dayIdx}
+                      className="p-3.5 rounded-2xl bg-white border border-stone-200 shadow-2xs space-y-3"
+                    >
+                      <div className="flex items-center justify-between gap-2 border-b border-stone-100 pb-2">
+                        <div>
+                          <div className="text-xs font-black text-stone-900">{entry.dateStr}</div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] font-bold text-stone-600 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">
+                              {entry.dayName}
+                            </span>
+                            {dayCalories > 0 && (
+                              <span className="text-[10px] font-black text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                🔥 {dayCalories} kcal
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRegenerateWizardDay(dayIdx)}
+                          className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs transition-colors border border-amber-200 cursor-pointer flex items-center gap-1"
+                          title="Günü Yenile"
+                        >
+                          <span>🔄</span>
+                          <span>Yenile</span>
+                        </button>
+                      </div>
+
+                      {/* Yemek Rozetleri */}
+                      <div className="flex flex-wrap gap-1.5 items-center">
+                        {items.map((dish, dishIdx) => {
+                          const cat = autoDetectCategory(dish);
+                          const catColor = CATEGORY_COLORS[cat] || 'bg-stone-100 text-stone-800 border-stone-300';
+                          const dbMeal = availableMeals.find((m) => m.name.toLowerCase() === dish.toLowerCase());
+                          const cal = dbMeal?.calories ? dbMeal.calories : getMealCalories(dish, cat);
+
+                          return (
+                            <span
+                              key={dishIdx}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold border shadow-2xs group transition-all ${catColor}`}
+                            >
+                              <span
+                                onClick={(e) =>
+                                  handleOpenSwap(
+                                    e as unknown as React.MouseEvent<HTMLButtonElement>,
+                                    'wizard',
+                                    dayIdx,
+                                    dishIdx,
+                                    dish
+                                  )
+                                }
+                                className="cursor-pointer hover:underline"
+                              >
+                                {dish}
+                              </span>
+                              <span className="opacity-80 font-black text-[10px]">({cal} kcal)</span>
+
+                              <button
+                                type="button"
+                                onClick={(e) => handleOpenSwap(e, 'wizard', dayIdx, dishIdx, dish)}
+                                className="w-5 h-5 flex items-center justify-center rounded-md text-amber-700 hover:text-amber-950 hover:bg-amber-200/60 font-black text-xs transition-colors cursor-pointer"
+                              >
+                                🔄
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveDishFromWizardDay(dayIdx, dishIdx)}
+                                className="w-5 h-5 flex items-center justify-center rounded-md text-stone-400 hover:text-rose-600 hover:bg-rose-100/60 font-black text-xs leading-none transition-colors cursor-pointer"
+                              >
+                                ✕
+                              </button>
+                            </span>
+                          );
+                        })}
+
+                        <button
+                          type="button"
+                          onClick={(e) =>
+                            handleOpenAdd(
+                              e,
+                              'wizard',
+                              dayIdx,
+                              `${entry.dateStr} (${entry.dayName}) Taslağına Yemek Ekle`
+                            )
+                          }
+                          className="px-2.5 py-1 rounded-lg border border-dashed border-amber-400 text-amber-700 hover:bg-amber-100/60 font-extrabold text-xs transition-colors cursor-pointer"
+                        >
+                          + Yemek Ekle
+                        </button>
+                      </div>
+
+                      {/* Doğrudan metin düzenleme */}
+                      <input
+                        type="text"
+                        value={entry.mealText}
+                        onChange={(e) => {
+                          const updated = [...wizardEntries];
+                          updated[dayIdx].mealText = e.target.value;
+                          updated[dayIdx].items = parseItems(e.target.value);
+                          setWizardEntries(updated);
+                        }}
+                        placeholder="Virgülle ayırarak yemekleri düzenleyin..."
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-stone-200 text-xs text-stone-700 focus:outline-none focus:border-amber-400 bg-stone-50/50"
+                      />
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Alt Onay Butonu */}

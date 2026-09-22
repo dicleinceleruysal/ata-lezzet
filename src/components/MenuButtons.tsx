@@ -358,6 +358,7 @@ export default function MenuButtons() {
   // Aylık görünüm filtreleri
   const [selectedWeekFilter, setSelectedWeekFilter] = useState<number | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [mobileCalendarView, setMobileCalendarView] = useState<'cards' | 'grid'>('cards');
 
   const [dbMealsMap, setDbMealsMap] = useState<Record<string, CategoryKey>>({});
   const [dbCaloriesMap, setDbCaloriesMap] = useState<Record<string, number>>({});
@@ -1109,13 +1110,145 @@ export default function MenuButtons() {
 
           {/* 6 Günlük Takvim Izgarası (Pazartesi - Cumartesi) */}
           <div className="bg-white rounded-3xl p-4 sm:p-6 border-2 border-amber-200/90 shadow-sm space-y-4">
-            {/* Mobil Kaydırma İpucu */}
-            <div className="flex items-center justify-between text-xs text-stone-500 font-bold md:hidden px-1">
-              <span>👉 Takvimi sağa-sola kaydırabilirsiniz</span>
-              <span className="text-[11px] text-amber-600 font-extrabold">{monthlyPlan?.monthName} {calendarData.year}</span>
+            {/* Mobil Görünüm Seçici (Liste vs Tablo) */}
+            <div className="flex md:hidden items-center justify-between gap-2 p-1.5 bg-stone-100/80 rounded-2xl border border-stone-200">
+              <span className="text-xs font-black text-stone-700 px-2">
+                Görünüm:
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setMobileCalendarView('cards')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    mobileCalendarView === 'cards'
+                      ? 'bg-amber-500 text-white shadow-2xs'
+                      : 'text-stone-600 hover:text-stone-900 bg-white/60'
+                  }`}
+                >
+                  📋 Hafta Hafta Liste
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileCalendarView('grid')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                    mobileCalendarView === 'grid'
+                      ? 'bg-amber-500 text-white shadow-2xs'
+                      : 'text-stone-600 hover:text-stone-900 bg-white/60'
+                  }`}
+                >
+                  📅 6 Günlük Tablo
+                </button>
+              </div>
             </div>
 
-            <div className="overflow-x-auto pb-2 scrollbar-thin">
+            {/* Mobilde Hafta Hafta Liste Görünümü */}
+            {mobileCalendarView === 'cards' && (
+              <div className="md:hidden space-y-4">
+                {displayedWeekGroups.map((wg) => (
+                  <div key={wg.weekNumber} className="space-y-2.5">
+                    <div className="text-xs font-black text-amber-900 bg-amber-50 border border-amber-200/80 px-3 py-1.5 rounded-xl flex items-center justify-between">
+                      <span>{wg.label}</span>
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-md">
+                        {wg.entries.length} Gün
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {wg.entries.map((entry) => {
+                        const dishes = parseDishes(entry.items, entry.mealText);
+                        const dayCalories = dishes.reduce(
+                          (sum, dish) => sum + getDishCalories(dish),
+                          0
+                        );
+                        const isEntryToday = entry.id === entries[todayIndex]?.id;
+
+                        return (
+                          <div
+                            key={entry.id}
+                            onClick={() => handleSelectDayFromMonthly(entry)}
+                            className={`p-3.5 rounded-2xl border transition-all cursor-pointer space-y-2 ${
+                              isEntryToday
+                                ? 'bg-emerald-50/50 border-emerald-400 ring-2 ring-emerald-300 shadow-2xs'
+                                : 'bg-white border-stone-200 hover:border-amber-300 shadow-2xs'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between border-b border-stone-100 pb-1.5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-black text-stone-900">{entry.dateStr}</span>
+                                {isEntryToday && (
+                                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-emerald-600 text-white animate-pulse">
+                                    Bugün
+                                  </span>
+                                )}
+                              </div>
+                              {dayCalories > 0 && (
+                                <span className="text-[10px] font-black text-amber-900 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md">
+                                  🔥 {dayCalories} kcal
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Yemekler */}
+                            <div className="flex flex-wrap gap-1.5">
+                              {dishes.map((dish, dIdx) => {
+                                const cat = getDishCategory(dish);
+                                const meta = CATEGORY_META[cat];
+                                const norm = normalizeFoodText(dish);
+                                const dishImg = getDishImageUrl(dish, cat, dbImagesMap[norm]);
+
+                                return (
+                                  <span
+                                    key={dIdx}
+                                    className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-lg border shadow-2xs ${meta.badgeClass}`}
+                                  >
+                                    <span>{dish}</span>
+                                    {dishImg && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedFoodModal({
+                                            name: dish,
+                                            category: cat,
+                                            calories: getDishCalories(dish),
+                                            imageUrl: dishImg,
+                                          });
+                                        }}
+                                        className="inline-flex items-center justify-center w-4 h-4 rounded bg-amber-500 text-white text-[9px] font-bold"
+                                        title="Görseli Büyüt"
+                                      >
+                                        📷
+                                      </button>
+                                    )}
+                                  </span>
+                                );
+                              })}
+                            </div>
+
+                            <div className="flex justify-end pt-1">
+                              <span className="text-[11px] font-black text-amber-700 flex items-center gap-0.5">
+                                <span>Detaylı Menüyü İncele</span>
+                                <span>&rarr;</span>
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Mobil Kaydırma İpucu (Sadece tablo modunda) */}
+            {mobileCalendarView === 'grid' && (
+              <div className="flex items-center justify-between text-xs text-stone-500 font-bold md:hidden px-1">
+                <span>👉 Takvimi sağa-sola kaydırabilirsiniz</span>
+                <span className="text-[11px] text-amber-600 font-extrabold">{monthlyPlan?.monthName} {calendarData.year}</span>
+              </div>
+            )}
+
+            <div className={`${mobileCalendarView === 'grid' ? 'block' : 'hidden md:block'} overflow-x-auto pb-2 scrollbar-thin`}>
               <div className="min-w-[720px]">
                 {/* 6 Sütun Gün Başlıkları */}
                 <div className="grid grid-cols-6 gap-2 mb-2.5">

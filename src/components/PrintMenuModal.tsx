@@ -57,44 +57,44 @@ export default function PrintMenuModal({
       <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-[94vh] overflow-hidden border border-stone-200 print:max-w-none print:max-h-none print:shadow-none print:border-none print:rounded-none print:overflow-visible">
         
         {/* Üst Eylem Çubuğu (Yazdırmada Gizlenir) */}
-        <div className="flex items-center justify-between px-5 py-3.5 bg-stone-900 text-white print:hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 py-3.5 bg-stone-900 text-white print:hidden">
           <div className="flex items-center gap-2.5">
             <span className="text-xl">🖨️</span>
             <div>
-              <h3 className="font-extrabold text-sm sm:text-base">
-                Yazdırma ve Dışa Aktarma Önizlemesi
+              <h3 className="font-extrabold text-sm sm:text-base leading-tight">
+                Yazdırma ve Dışa Aktarma
               </h3>
-              <p className="text-[11px] text-stone-400">
-                {title} (A4 Dikey Tam Sayfa Tablo)
+              <p className="text-[11px] text-stone-400 truncate max-w-xs sm:max-w-none">
+                {title} (A4 Dikey Standart Tablo)
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-between sm:justify-end w-full sm:w-auto">
             <button
               type="button"
               onClick={handleExcel}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+              className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
               title="Excel (.xlsx) olarak indir"
             >
               <span>📊</span>
-              <span className="hidden sm:inline">Excel İndir (.xlsx)</span>
+              <span>Excel</span>
             </button>
 
             <button
               type="button"
               onClick={handlePrint}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-md"
+              className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-md"
               title="Yazdır veya PDF olarak kaydet"
             >
               <span>🖨️</span>
-              <span>Yazdır / PDF Kaydet</span>
+              <span>Yazdır / PDF</span>
             </button>
 
             <button
               type="button"
               onClick={onClose}
-              className="p-2 text-stone-400 hover:text-white rounded-lg transition-colors cursor-pointer ml-1"
+              className="p-1.5 sm:p-2 text-stone-400 hover:text-white rounded-lg transition-colors cursor-pointer ml-1"
               title="Kapat (Esc)"
             >
               ✕
@@ -103,7 +103,7 @@ export default function PrintMenuModal({
         </div>
 
         {/* Önizleme & Yazdırılabilir Belge Alanı */}
-        <div className="p-4 sm:p-8 overflow-y-auto flex-1 bg-stone-200/70">
+        <div className="p-2 sm:p-8 overflow-y-auto overflow-x-auto flex-1 bg-stone-200/70">
           <div
             id="printable-menu-document"
             className="bg-white p-6 sm:p-10 shadow-xl border-2 border-black max-w-4xl mx-auto text-black"

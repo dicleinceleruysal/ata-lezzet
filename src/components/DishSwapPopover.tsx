@@ -95,9 +95,27 @@ export default function DishSwapPopover({
     }
   }, [isOpen, mode, currentDish, availableMeals]);
 
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  // Mobil ekran tespiti
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(typeof window !== 'undefined' && window.innerWidth < 640);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // Konum hesaplama (Ekran dışına taşmaması için hassas ayar)
   useEffect(() => {
     if (!isOpen || !anchorRect) return;
+
+    if (window.innerWidth < 640) {
+      setIsMobile(true);
+      return;
+    }
+    setIsMobile(false);
 
     const popoverWidth = Math.min(390, window.innerWidth - 24);
     let left = anchorRect.left;
@@ -168,19 +186,37 @@ export default function DishSwapPopover({
 
   return (
     <div className="fixed inset-0 z-50 pointer-events-none">
-      {/* Şeffaf Tıklama Engelleyici */}
-      <div className="absolute inset-0 bg-stone-900/20 backdrop-blur-2xs pointer-events-auto transition-opacity" />
+      {/* Şeffaf Tıklama Engelleyici Backdrop */}
+      <div 
+        onClick={onClose}
+        className="absolute inset-0 bg-stone-950/40 backdrop-blur-2xs pointer-events-auto transition-opacity" 
+      />
 
-      {/* Popover Penceresi */}
+      {/* Popover Penceresi (Mobilde Alttan Açılan Sheet, Masaüstünde Konumlu Popover) */}
       <div
         ref={popoverRef}
-        style={{
-          top: `${coords.top}px`,
-          left: `${coords.left}px`,
-          width: `${coords.width}px`,
-        }}
-        className="fixed z-50 pointer-events-auto bg-white rounded-2xl shadow-2xl border border-stone-200 text-stone-800 flex flex-col max-h-[480px] overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+        style={
+          isMobile
+            ? undefined
+            : {
+                top: `${coords.top}px`,
+                left: `${coords.left}px`,
+                width: `${coords.width}px`,
+              }
+        }
+        className={`fixed z-50 pointer-events-auto bg-white text-stone-800 flex flex-col overflow-hidden shadow-2xl border border-stone-200 transition-all ${
+          isMobile
+            ? 'inset-x-0 bottom-0 max-h-[85vh] rounded-t-3xl rounded-b-none border-t border-stone-300 animate-in slide-in-from-bottom duration-200 pb-safe'
+            : 'rounded-2xl max-h-[480px] animate-in fade-in zoom-in-95 duration-150'
+        }`}
       >
+        {/* Mobilde Tutma Çubuğu (Drag Handle) */}
+        {isMobile && (
+          <div className="pt-2.5 pb-1 flex justify-center bg-stone-50 border-b border-stone-100">
+            <div className="w-12 h-1.5 bg-stone-300 rounded-full" />
+          </div>
+        )}
+
         {/* Başlık Bölümü */}
         <div className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-stone-200 flex items-center justify-between">
           <div className="min-w-0 flex-1 mr-2">

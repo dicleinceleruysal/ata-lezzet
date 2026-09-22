@@ -531,7 +531,7 @@ export default function AdminYemeklerPage() {
       )}
 
       {/* Yemek Tablosu ve Arama */}
-      <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs space-y-4 p-6">
+      <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs space-y-4 p-3.5 sm:p-6">
         {/* Arama Kutusu ve Sayaç */}
         <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
           <div className="relative flex-1 max-w-md">
@@ -578,7 +578,7 @@ export default function AdminYemeklerPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="border border-stone-200 rounded-xl overflow-hidden">
+            <div className="hidden md:block border border-stone-200 rounded-xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs sm:text-sm text-stone-700 border-collapse">
                   <thead className="sticky top-0 z-10 bg-stone-100 text-[11px] uppercase text-stone-700 font-black tracking-wider border-b border-stone-200">
@@ -792,6 +792,195 @@ export default function AdminYemeklerPage() {
               </div>
             </div>
 
+            {/* Mobil Kart Görünümü (Ekran Genişliği < md) */}
+            <div className="md:hidden space-y-3">
+              {currentMeals.map((m, index) => {
+                const isEditing = editingId === m.id;
+                const rowNumber = startIndex + index + 1;
+                const badgeClass = CATEGORY_COLORS[m.category] || 'bg-stone-100 text-stone-800 border-stone-300';
+                const currentCal = m.calories !== null && m.calories !== undefined ? m.calories : getMealCalories(m.name, m.category);
+                const dishImageUrl = m.imageUrl || getDishImageUrl(m.name, m.category);
+
+                if (isEditing) {
+                  return (
+                    <div key={m.id} className="p-4 rounded-2xl bg-amber-50/40 border-2 border-amber-400 space-y-3 shadow-xs">
+                      <div className="flex items-center justify-between text-xs font-bold text-amber-900">
+                        <span>Düzenleniyor: #{rowNumber}</span>
+                        <button
+                          type="button"
+                          onClick={handleCancelEdit}
+                          className="text-stone-400 hover:text-stone-700 text-sm font-black p-1"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-stone-700 block">Yemek Adı</label>
+                        <input
+                          type="text"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="w-full px-3 py-2 text-xs font-bold rounded-xl border border-amber-400 focus:outline-none bg-white"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[11px] font-bold text-stone-700 block mb-1">Kategori</label>
+                          <select
+                            value={editCategory}
+                            onChange={(e) => setEditCategory(e.target.value)}
+                            className="w-full px-2.5 py-2 rounded-xl border border-amber-400 text-xs font-bold text-stone-900 focus:outline-none bg-white"
+                          >
+                            <option value="corba">Çorba</option>
+                            <option value="ana_yemek">Ana Yemek</option>
+                            <option value="yan_yemek">Yan Yemek</option>
+                            <option value="salata">Salata / Meze</option>
+                            <option value="tatli">Tatlı / Meyve</option>
+                            <option value="icecek">İçecek</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-bold text-stone-700 block mb-1">Kalori (kcal)</label>
+                          <input
+                            type="number"
+                            value={editCalories}
+                            onChange={(e) => setEditCalories(e.target.value)}
+                            className="w-full px-2.5 py-2 rounded-xl border border-amber-400 text-xs font-bold text-stone-900 text-center focus:outline-none bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Görsel Düzenleme */}
+                      <div className="p-2.5 bg-white rounded-xl border border-amber-200 space-y-2">
+                        <div className="flex items-center gap-3">
+                          {editImageUrl ? (
+                            <img
+                              src={editImageUrl}
+                              alt="Önizleme"
+                              className="w-12 h-12 rounded-xl object-cover border border-amber-400 shadow-2xs"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-xl border border-dashed border-stone-300 flex items-center justify-center text-stone-400 text-xs font-bold bg-stone-50">
+                              Yok
+                            </div>
+                          )}
+                          <div className="flex-1 space-y-1">
+                            <button
+                              type="button"
+                              onClick={() => editFileInputRef.current?.click()}
+                              className="px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-lg text-xs font-bold transition-colors cursor-pointer inline-block"
+                            >
+                              📷 Fotoğraf Seç
+                            </button>
+                            {editImageUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setEditImageUrl('')}
+                                className="block text-[11px] text-rose-600 hover:underline font-semibold"
+                              >
+                                Görseli Kaldır
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={handleCancelEdit}
+                          className="flex-1 py-2 rounded-xl bg-stone-200 text-stone-700 text-xs font-bold transition-colors cursor-pointer text-center"
+                        >
+                          Vazgeç
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveEdit(m.id)}
+                          disabled={saving}
+                          className="flex-1 py-2 rounded-xl bg-emerald-600 text-white text-xs font-black transition-colors cursor-pointer text-center shadow-xs"
+                        >
+                          💾 Kaydet
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    key={m.id}
+                    className="p-3.5 rounded-2xl bg-white border border-stone-200 hover:border-amber-300 shadow-2xs transition-all space-y-2.5"
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Görsel */}
+                      {dishImageUrl ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPreviewModalImage({
+                              url: dishImageUrl,
+                              title: m.name,
+                              category: CATEGORY_NAMES[m.category] || m.category,
+                            })
+                          }
+                          className="relative flex-shrink-0 cursor-pointer"
+                        >
+                          <img
+                            src={dishImageUrl}
+                            alt={m.name}
+                            className="w-14 h-14 object-cover rounded-xl border border-stone-200 shadow-2xs"
+                          />
+                        </button>
+                      ) : (
+                        <div className="w-14 h-14 rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-400 text-xl flex-shrink-0">
+                          🍽️
+                        </div>
+                      )}
+
+                      {/* Başlık & Kategori & Kalori */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                          <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md border shadow-2xs ${badgeClass}`}>
+                            {CATEGORY_NAMES[m.category] || m.category}
+                          </span>
+                          <span className="text-[10px] font-black text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md">
+                            🔥 {currentCal} kcal
+                          </span>
+                        </div>
+                        <h4 className="font-black text-stone-900 text-sm leading-tight line-clamp-2">
+                          {m.name}
+                        </h4>
+                      </div>
+                    </div>
+
+                    {/* Aksiyon Butonları */}
+                    <div className="flex items-center justify-between pt-2 border-t border-stone-100 text-xs">
+                      <span className="text-[11px] font-bold text-stone-400">#{rowNumber}</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(m)}
+                          className="px-3 py-1 rounded-lg bg-stone-100 hover:bg-amber-100 text-stone-700 font-bold transition-colors border border-stone-200 cursor-pointer"
+                        >
+                          ✏️ Düzenle
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteMeal(m.id, m.name)}
+                          className="px-2.5 py-1 rounded-lg text-rose-500 hover:bg-rose-50 font-bold transition-colors cursor-pointer"
+                          title="Sil"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
             {/* Sayfalama Kontrolleri (Pagination) */}
             {totalPages > 1 && (
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-stone-100">
@@ -803,7 +992,7 @@ export default function AdminYemeklerPage() {
                   arası gösteriliyor (Her sayfada {ITEMS_PER_PAGE} adet)
                 </div>
 
-                <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                <div className="flex items-center gap-1.5 justify-center w-full sm:w-auto">
                   {/* Önceki Sayfa */}
                   <button
                     type="button"
@@ -814,24 +1003,31 @@ export default function AdminYemeklerPage() {
                     &larr; Önceki
                   </button>
 
-                  {/* Sayfa Numaraları */}
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
-                    const isActive = pageNum === validCurrentPage;
-                    return (
-                      <button
-                        key={pageNum}
-                        type="button"
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={`min-w-[34px] h-[34px] px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                          isActive
-                            ? 'bg-amber-500 text-white shadow-xs border border-amber-600 scale-105'
-                            : 'bg-white text-stone-700 hover:bg-amber-50 border border-stone-200 hover:border-amber-300'
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
+                  {/* Mobilde Kompakt Sayfa Göstergesi */}
+                  <span className="sm:hidden px-3 py-1.5 text-xs font-black text-amber-900 bg-amber-50 rounded-xl border border-amber-200">
+                    {validCurrentPage} / {totalPages}
+                  </span>
+
+                  {/* Masaüstünde Tüm Sayfa Numaraları */}
+                  <div className="hidden sm:flex items-center gap-1.5">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                      const isActive = pageNum === validCurrentPage;
+                      return (
+                        <button
+                          key={pageNum}
+                          type="button"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`min-w-[34px] h-[34px] px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                            isActive
+                              ? 'bg-amber-500 text-white shadow-xs border border-amber-600 scale-105'
+                              : 'bg-white text-stone-700 hover:bg-amber-50 border border-stone-200 hover:border-amber-300'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
 
                   {/* Sonraki Sayfa */}
                   <button
