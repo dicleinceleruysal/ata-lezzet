@@ -355,10 +355,10 @@ export default function MenuButtons() {
   const [todayIndex, setTodayIndex] = useState<number>(0);
   const [isSundayToday, setIsSundayToday] = useState<boolean>(false);
 
-  // Aylık görünüm filtreleri
+  // Aylık görünüm filtreleri ve görünüm modu (cards: Modern Fotoğraflı Liste, grid: 6 Günlük Tablo)
   const [selectedWeekFilter, setSelectedWeekFilter] = useState<number | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [mobileCalendarView, setMobileCalendarView] = useState<'cards' | 'grid'>('cards');
+  const [calendarViewMode, setCalendarViewMode] = useState<'cards' | 'grid'>('cards');
 
   const [dbMealsMap, setDbMealsMap] = useState<Record<string, CategoryKey>>({});
   const [dbCaloriesMap, setDbCaloriesMap] = useState<Record<string, number>>({});
@@ -1070,10 +1070,8 @@ export default function MenuButtons() {
                 <span>Pazartesi – Cumartesi 6 Günlük Çalışma Takvimi</span>
                 <span className="text-stone-300">•</span>
                 <span className="inline-flex items-center gap-1.5 font-bold text-stone-700">
-                  <span className="inline-flex items-center justify-center w-4 h-4 rounded bg-amber-500 text-white shadow-2xs">
-                    <CameraIcon className="w-2.5 h-2.5" />
-                  </span>
-                  <span>Fotoğraf ikonu olan yemeklere tıklayarak görseli büyütebilirsiniz</span>
+                  <span className="text-amber-600">📸</span>
+                  <span>Yemek fotoğraflarına tıklayarak görseli büyütebilirsiniz</span>
                 </span>
               </div>
 
@@ -1110,38 +1108,43 @@ export default function MenuButtons() {
 
           {/* 6 Günlük Takvim Izgarası (Pazartesi - Cumartesi) */}
           <div className="bg-white rounded-3xl p-4 sm:p-6 border-2 border-amber-200/90 shadow-sm space-y-4">
-            {/* Mobil Görünüm Başlığı, Seçici ve Hafta Filtreleri */}
-            <div className="md:hidden space-y-3">
+            {/* Görünüm Seçici ve Hafta Filtreleri (Hem Masaüstü Hem Mobil) */}
+            <div className="space-y-3">
               {/* Görünüm Geçiş Düğmesi (Segmented Control) */}
-              <div className="flex items-center justify-between gap-2 p-1 bg-stone-100/90 rounded-2xl border border-stone-200/90">
-                <button
-                  type="button"
-                  onClick={() => setMobileCalendarView('cards')}
-                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    mobileCalendarView === 'cards'
-                      ? 'bg-white text-stone-900 shadow-xs border border-stone-200/80'
-                      : 'text-stone-500 hover:text-stone-800'
-                  }`}
-                >
-                  <span>📋</span>
-                  <span>Modern Liste</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMobileCalendarView('grid')}
-                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    mobileCalendarView === 'grid'
-                      ? 'bg-white text-stone-900 shadow-xs border border-stone-200/80'
-                      : 'text-stone-500 hover:text-stone-800'
-                  }`}
-                >
-                  <span>📅</span>
-                  <span>6 Günlük Tablo</span>
-                </button>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 p-1.5 bg-stone-100/90 rounded-2xl border border-stone-200/90">
+                <div className="flex items-center gap-1.5 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => setCalendarViewMode('cards')}
+                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                      calendarViewMode === 'cards'
+                        ? 'bg-white text-stone-900 shadow-xs border border-stone-200/80'
+                        : 'text-stone-500 hover:text-stone-800'
+                    }`}
+                  >
+                    <span>📋</span>
+                    <span>Modern Fotoğraflı Liste</span>
+                    <span className="text-[10px] text-amber-800 bg-amber-100/80 border border-amber-200 px-1.5 py-0.2 rounded font-bold">
+                      Görselli
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCalendarViewMode('grid')}
+                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                      calendarViewMode === 'grid'
+                        ? 'bg-white text-stone-900 shadow-xs border border-stone-200/80'
+                        : 'text-stone-500 hover:text-stone-800'
+                    }`}
+                  >
+                    <span>📅</span>
+                    <span>6 Günlük Takvim Tablosu</span>
+                  </button>
+                </div>
               </div>
 
               {/* Hafta Filtreleri (Sadece Liste modunda hızlı gezinme) */}
-              {mobileCalendarView === 'cards' && weekGroups.length > 1 && (
+              {calendarViewMode === 'cards' && weekGroups.length > 1 && (
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
                   <button
                     type="button"
@@ -1152,7 +1155,7 @@ export default function MenuButtons() {
                         : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                     }`}
                   >
-                    Tüm Ay
+                    Tüm Ay ({entries.length} Gün)
                   </button>
                   {weekGroups.map((wg) => {
                     const isSelected = selectedWeekFilter === wg.weekNumber;
@@ -1184,9 +1187,9 @@ export default function MenuButtons() {
               )}
             </div>
 
-            {/* Mobilde Modern Hafta Hafta Liste Görünümü (Renk Karmaşası Olmayan Sade Tasarım) */}
-            {mobileCalendarView === 'cards' && (
-              <div className="md:hidden space-y-5">
+            {/* Modern Hafta Hafta Fotoğraflı Liste Görünümü (Hem Masaüstü Hem Mobilde Mükemmel Kart Düzeni) */}
+            {calendarViewMode === 'cards' && (
+              <div className="space-y-6">
                 {displayedWeekGroups.length === 0 ? (
                   <div className="py-8 text-center text-stone-400 font-bold text-xs bg-stone-50 rounded-2xl border border-stone-200">
                     Aramanıza uygun gün bulunamadı.
@@ -1197,18 +1200,18 @@ export default function MenuButtons() {
                       {/* Hafta Başlık Çizgisi */}
                       <div className="flex items-center justify-between px-1 pt-1">
                         <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-amber-500" />
-                          <span className="text-xs font-black text-stone-800 tracking-tight">
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-2xs" />
+                          <span className="text-sm font-black text-stone-900 tracking-tight">
                             {wg.label}
                           </span>
                         </div>
-                        <span className="text-[10px] font-bold text-stone-500 bg-stone-100 px-2 py-0.5 rounded-md">
+                        <span className="text-[11px] font-bold text-stone-600 bg-stone-100 px-2.5 py-0.5 rounded-lg border border-stone-200/80">
                           {wg.entries.length} Gün
                         </span>
                       </div>
 
-                      {/* Günlük Kartlar */}
-                      <div className="space-y-3">
+                      {/* Günlük Kartlar: Masaüstünde 3'lü/2'li Şık Izgara, Mobilde Tek Sütun */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
                         {wg.entries.map((entry) => {
                           const dishes = parseDishes(entry.items, entry.mealText);
                           const dayCalories = dishes.reduce(
@@ -1341,14 +1344,14 @@ export default function MenuButtons() {
             )}
 
             {/* Mobil Kaydırma İpucu (Sadece tablo modunda) */}
-            {mobileCalendarView === 'grid' && (
+            {calendarViewMode === 'grid' && (
               <div className="flex items-center justify-between text-xs text-stone-500 font-bold md:hidden px-1">
                 <span>👉 Takvimi sağa-sola kaydırabilirsiniz</span>
                 <span className="text-[11px] text-amber-600 font-extrabold">{monthlyPlan?.monthName} {calendarData.year}</span>
               </div>
             )}
 
-            <div className={`${mobileCalendarView === 'grid' ? 'block' : 'hidden md:block'} overflow-x-auto pb-2 scrollbar-thin`}>
+            <div className={`${calendarViewMode === 'grid' ? 'block' : 'hidden'} overflow-x-auto pb-2 scrollbar-thin`}>
               <div className="min-w-[720px]">
                 {/* 6 Sütun Gün Başlıkları */}
                 <div className="grid grid-cols-6 gap-2 mb-2.5">
@@ -1370,7 +1373,7 @@ export default function MenuButtons() {
                       return (
                         <div
                           key={cell.key}
-                          className="min-h-[150px] rounded-2xl bg-stone-50/40 border border-dashed border-stone-200/50"
+                          className="min-h-[180px] rounded-2xl bg-stone-50/40 border border-dashed border-stone-200/50"
                         />
                       );
                     }
@@ -1381,7 +1384,7 @@ export default function MenuButtons() {
                         <div
                           key={cell.key}
                           onClick={() => handleSelectDayFromMonthly(cell.entry!)}
-                          className={`min-h-[150px] p-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group hover:shadow-lg hover:-translate-y-0.5 ${
+                          className={`min-h-[180px] p-2.5 sm:p-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between group hover:shadow-lg hover:-translate-y-0.5 ${
                             cell.isToday
                               ? 'bg-emerald-50/40 border-emerald-400 ring-2 ring-emerald-300 shadow-sm'
                               : cell.matchesSearch
@@ -1415,44 +1418,71 @@ export default function MenuButtons() {
                             ) : null}
                           </div>
 
-                          {/* Yemekler Listesi (Noktasız, Net ve Okunaklı) */}
+                          {/* Yemekler Listesi (Fotoğraflı, Net ve Modern) */}
                           <div className="space-y-1 flex-1 my-0.5">
                             {cell.dishes?.slice(0, 4).map((dish, dIdx) => {
                               const cat = getDishCategory(dish);
+                              const meta = CATEGORY_META[cat];
                               const norm = normalizeFoodText(dish);
                               const dishImg = getDishImageUrl(dish, cat, dbImagesMap[norm]);
+                              const cal = getDishCalories(dish);
 
                               return (
                                 <div
                                   key={dIdx}
-                                  className="flex items-start justify-between gap-1 text-[12px] font-bold text-stone-800 group-hover:text-stone-950 leading-snug py-0.5 border-b border-stone-100/70 last:border-0"
+                                  className="flex items-center gap-1.5 p-1 rounded-xl bg-stone-50/70 hover:bg-amber-50/60 border border-stone-150/50 transition-colors"
                                 >
-                                  <span className="line-clamp-2 flex-1" title={dish}>
-                                    {dish}
-                                  </span>
-                                  {dishImg && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
+                                  {/* Fotoğraf Küçük Resmi */}
+                                  <div
+                                    onClick={(e) => {
+                                      if (dishImg) {
                                         e.stopPropagation();
                                         setSelectedFoodModal({
                                           name: dish,
                                           category: cat,
-                                          calories: getDishCalories(dish),
+                                          calories: cal,
                                           imageUrl: dishImg,
                                         });
-                                      }}
-                                      className="inline-flex items-center justify-center w-5 h-5 rounded-md bg-amber-500 hover:bg-amber-600 text-white shadow-xs hover:scale-115 active:scale-95 transition-all cursor-pointer flex-shrink-0 ml-1.5"
-                                      title="Yemek fotoğrafını büyüt"
-                                    >
-                                      <CameraIcon className="w-3.5 h-3.5" />
-                                    </button>
-                                  )}
+                                      }
+                                    }}
+                                    className={`relative w-7 h-7 sm:w-8 sm:h-8 rounded-lg overflow-hidden flex-shrink-0 border border-stone-200/80 bg-white flex items-center justify-center ${
+                                      dishImg ? 'cursor-pointer hover:scale-105 active:scale-95 transition-transform' : ''
+                                    }`}
+                                    title={dishImg ? 'Fotoğrafı büyütmek için dokunun' : undefined}
+                                  >
+                                    {dishImg ? (
+                                      <>
+                                        <img
+                                          src={dishImg}
+                                          alt={dish}
+                                          className="w-full h-full object-cover"
+                                          loading="lazy"
+                                        />
+                                        <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[8px] font-black">
+                                          🔍
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <span className="text-xs select-none">
+                                        {cat === 'corba' ? '🍲' : cat === 'ana_yemek' ? '🥩' : cat === 'yan_yemek' ? '🍚' : cat === 'salata' ? '🥗' : cat === 'tatli' ? '🍮' : '🥤'}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Yemek Başlığı & Kategori */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-[11px] font-bold text-stone-900 truncate leading-snug" title={dish}>
+                                      {dish}
+                                    </div>
+                                    <div className="text-[9px] text-stone-400 font-medium truncate">
+                                      {meta?.label || 'Yemek'}
+                                    </div>
+                                  </div>
                                 </div>
                               );
                             })}
                             {cell.dishes && cell.dishes.length > 4 && (
-                              <div className="text-[10px] font-extrabold text-stone-400 pt-0.5">
+                              <div className="text-[10px] font-extrabold text-stone-400 pt-0.5 text-center">
                                 +{cell.dishes.length - 4} yemek daha
                               </div>
                             )}
