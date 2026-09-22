@@ -11,9 +11,18 @@ interface VersionItem {
 
 const VERSION_HISTORY: VersionItem[] = [
   {
-    version: 'v1.4.0',
+    version: 'v1.4.1',
     date: '22 Eylül 2026',
     isCurrent: true,
+    changes: [
+      'Kullanıcı Tarafından Eklenen Yemek & Görsellerin Senkronizasyonu: Yönetici panelinden manuel eklenen tüm yeni yemek kayıtları ve görseller (Ayran, Menemen, Meyve, Profiterol, Puding, Supangle, Sütlaç, Tiramisu vb.) public/dishes/ arşivine ve ensureSeed.ts veritabanı tohumlama sistemine işlendi.',
+      'Görsel Depolama ve Veritabanı Optimizasyonu: Base64 formatında veritabanını şişiren görseller gerçek JPEG dosyalarına dönüştürüldü; SQLite veritabanı optimize edilerek Vercel CDN ve GitHub üzerinde kalıcılığı sağlandı.',
+      'Katalog & Görsel Eşleştirme Güncellemesi: Eklenen tüm tatlı, içecek ve yan yemekler doğrudan sistem görsel kataloğuyla (dishVisuals) eşleştirildi.',
+    ],
+  },
+  {
+    version: 'v1.4.0',
+    date: '22 Eylül 2026',
     changes: [
       'Kapsamlı Responsive (Mobil & Tablet) Arayüzü: Tüm kullanıcı ve yönetici ekranları akıllı telefon ve tablet ekranlarına %100 duyarlı hale getirildi.',
       'Mobil Yönetici Gezinme Çubuğu (AdminNavbar): Mobilde parmakla rahat basılabilen (minimum 44px dokunma alanı) ve aktif sayfayı vurgulayan mobil navigasyon çubuğu eklendi.',
@@ -131,7 +140,7 @@ export default function Footer() {
 
           {/* 4. SÜRÜM BİLGİSİ & TIKLANABİLİR SÜRÜM GEÇMİŞİ */}
           <div className="pt-4 flex items-center justify-center gap-2 text-xs text-stone-400 font-medium">
-            <span className="text-stone-400 tracking-wide">Ata Lezzet v1.4.0</span>
+            <span className="text-stone-400 tracking-wide">Ata Lezzet v1.4.1</span>
             <span className="text-stone-300">|</span>
             <button
               type="button"
