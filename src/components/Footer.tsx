@@ -11,9 +11,20 @@ interface VersionItem {
 
 const VERSION_HISTORY: VersionItem[] = [
   {
-    version: 'v1.5.0',
+    version: 'v1.6.0',
     date: '22 Eylül 2026',
     isCurrent: true,
+    changes: [
+      'Gelişmiş & Kalıcı Puanlama Sistemi (1 Kişi = 1 Oy): Menü değerlendirme altyapısı yenilendi; her kullanıcı için tekil kimlik (ata_voter_id) ile bir kullanıcının günde sadece 1 kez oy verebilmesi kesinleştirildi. Mükerrer oylar engellendi ve oy verildikten sonra kalıcı kilit sağlandı.',
+      'Masaüstü Takviminde Hücre İçi Yemek Fotoğrafları: 6 günlük çalışma takvimi tablosundaki tüm gün hücrelerine yemeklerin gerçek fotoğraf önizlemeleri eklendi; fotoğrafa tıklandığında doğrudan büyük görsel modalı açılması sağlandı.',
+      'Masaüstü Görünümünün Sadeleştirilmesi: Masaüstü ekranında gereksiz liste/tablo ikili seçim karmaşası kaldırılarak doğrudan fotoğraflı 6 günlük takvim tablosunun açılması sağlandı (mobil ekranda modern liste seçeneği korundu).',
+      'Menü Satırlarındaki "Fotoğraflı" İbarelerinin Temizlenmesi: Kullanıcı talebi doğrultusunda yemek listesi satırlarında yer alan "Fotoğraflı" metinleri kaldırılarak temiz ve kurumsal bir görünüm elde edildi.',
+      'Yönetici Puanlama Raporlama Paneli: /admin/puanlama ekranında oy veren kullanıcı kimlikleri, gün gün ortalamalar ve 1-5 yıldız dağılım çubukları canlı senkronize edildi.',
+    ],
+  },
+  {
+    version: 'v1.5.0',
+    date: '22 Eylül 2026',
     changes: [
       'PWA (Progressive Web App) Dönüşümü: Ata Lezzet uygulaması artık Android, iOS, Windows ve Mac cihazlarda doğrudan ana ekrana ve masaüstüne yerel bir uygulama gibi yüklenebilir.',
       'Akıllı Service Worker & Çevrimdışı (Offline) Desteği: public/sw.js servisi ile yemek görselleri (/dishes/*) ve sayfa şablonları önbelleklenerek bağlantı kopsa dahi menülerin hızlı açılması sağlandı.',
