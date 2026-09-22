@@ -4,9 +4,10 @@ import React, { useState, useEffect } from 'react';
 
 interface DailyMenuRatingProps {
   dateStr: string;
+  isToday: boolean;
 }
 
-export default function DailyMenuRating({ dateStr }: DailyMenuRatingProps) {
+export default function DailyMenuRating({ dateStr, isToday }: DailyMenuRatingProps) {
   const [average, setAverage] = useState<number>(0);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [userRating, setUserRating] = useState<number | null>(null);
@@ -40,7 +41,7 @@ export default function DailyMenuRating({ dateStr }: DailyMenuRatingProps) {
   }, [dateStr]);
 
   const handleRate = async (score: number) => {
-    if (isSubmitting) return;
+    if (!isToday || isSubmitting) return;
 
     setIsSubmitting(true);
     setUserRating(score);
@@ -87,14 +88,41 @@ export default function DailyMenuRating({ dateStr }: DailyMenuRatingProps) {
 
   const activeStarCount = hoverRating || userRating || 0;
 
+  // SADECE BUGÜN PUANLANABİLİR KURALI:
+  // Eğer incelenen gün bugün değilse:
+  if (!isToday) {
+    if (totalCount === 0) {
+      // Başka günlerde ve henüz puan yoksa hiçbir şey gösterme
+      return null;
+    }
+
+    // Geçmişte verilmiş puan varsa salt okunur özet göster
+    return (
+      <div className="w-full bg-stone-50 p-3.5 rounded-2xl border border-stone-200 text-xs text-stone-600 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-amber-500 font-extrabold text-sm">★ {average.toFixed(1)} / 5</span>
+          <span className="text-stone-400">·</span>
+          <span className="font-semibold text-stone-700">{totalCount} Değerlendirme</span>
+        </div>
+        <span className="text-[11px] text-stone-400 font-medium">
+          🔒 Değerlendirme yalnızca menünün sunulduğu gün yapılabilir
+        </span>
+      </div>
+    );
+  }
+
+  // BUGÜN İSE: Tam interaktif 5 yıldızlı puanlama kartı
   return (
     <div className="w-full bg-gradient-to-r from-amber-50/90 via-orange-50/70 to-amber-50/90 p-4 sm:p-5 rounded-2xl border border-amber-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 transition-all">
       {/* Sol Başlık & Bilgi */}
       <div className="text-center sm:text-left">
         <div className="flex items-center justify-center sm:justify-start gap-2">
           <span className="text-xl">⭐</span>
-          <h3 className="text-sm sm:text-base font-black text-stone-900 tracking-tight">
-            Günün Menüsünü Değerlendirin
+          <h3 className="text-sm sm:text-base font-black text-stone-900 tracking-tight flex items-center gap-2">
+            Bugünün Menüsüne Not Verin
+            <span className="text-[10px] uppercase font-extrabold bg-emerald-500 text-white px-2 py-0.5 rounded-md shadow-2xs">
+              Bugün
+            </span>
           </h3>
         </div>
         <p className="text-xs text-stone-500 font-medium mt-0.5">
@@ -105,7 +133,7 @@ export default function DailyMenuRating({ dateStr }: DailyMenuRatingProps) {
               <span className="text-stone-600 font-semibold">{totalCount} Değerlendirme</span>
             </span>
           ) : (
-            'Bugünkü yemekleri nasıl buldunuz? Yıldızlara tıklayarak puan verin.'
+            'Bugünkü yemekleri nasıl buldunuz? Yıldızlara tıklayarak notunuzu verin.'
           )}
         </p>
       </div>
@@ -158,9 +186,9 @@ export default function DailyMenuRating({ dateStr }: DailyMenuRatingProps) {
               {hoverRating} Yıldız - {getScoreLabel(hoverRating)}
             </span>
           ) : userRating ? (
-            <span className="text-amber-800/80">Verdiğiniz Puan: {userRating} Yıldız</span>
+            <span className="text-amber-800/80">Verdiğiniz Not: {userRating} Yıldız</span>
           ) : (
-            <span className="text-stone-400">Puanınızı seçin (1 - 5)</span>
+            <span className="text-stone-400">Notunuzu seçin (1 - 5 Yıldız)</span>
           )}
         </div>
       </div>

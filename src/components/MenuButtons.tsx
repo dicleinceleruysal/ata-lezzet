@@ -972,8 +972,11 @@ export default function MenuButtons() {
                       </div>
                     </div>
 
-                    {/* Günün Menüsünü 5 Yıldız ile Puanlama */}
-                    <DailyMenuRating dateStr={currentEntry.dateStr} />
+                    {/* Günün Menüsünü 5 Yıldız ile Puanlama (Sadece Bugün) */}
+                    <DailyMenuRating
+                      dateStr={currentEntry.dateStr}
+                      isToday={currentIndex === todayIndex}
+                    />
                   </>
                 );
               })()}
