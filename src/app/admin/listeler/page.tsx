@@ -250,7 +250,7 @@ interface ApprovedMonthPlan {
 }
 
 export default function AdminListelerPage() {
-  const [activeTab, setActiveTab] = useState<'monthly' | 'wizard' | 'paste'>('monthly');
+  const [activeTab, setActiveTab] = useState<'monthly' | 'wizard'>('monthly');
 
   const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [selectedMonth, setSelectedMonth] = useState<number>(9); // Eylül
@@ -278,9 +278,6 @@ export default function AdminListelerPage() {
   const [wizardLoading, setWizardLoading] = useState<boolean>(false);
   const [wizardSaving, setWizardSaving] = useState<boolean>(false);
   const [pickerTarget, setPickerTarget] = useState<'monthly' | 'wizard'>('monthly');
-
-  // Toplu Yapıştırma State
-  const [pasteText, setPasteText] = useState('');
 
   // Yemek Seçici Modal State
   const [pickerDayIndex, setPickerDayIndex] = useState<number | null>(null);
@@ -586,91 +583,6 @@ export default function AdminListelerPage() {
     }
   };
 
-  // Toplu Yapıştırılan Metni Ayrıştır
-  const handleParsePasteText = () => {
-    if (!pasteText.trim()) {
-      setFeedback({ type: 'error', text: 'Lütfen yapıştırılacak metin giriniz.' });
-      return;
-    }
-
-    const lines = pasteText.split('\n');
-    const parsedList: MonthlyDailyEntry[] = [];
-    let sundayCount = 0;
-
-    for (const rawLine of lines) {
-      const line = rawLine.trim();
-      if (!line) continue;
-
-      if (line.toLowerCase().includes('tarih') && line.toLowerCase().includes('öğle')) {
-        continue;
-      }
-
-      if (line.toLowerCase().includes('pazar')) {
-        sundayCount++;
-        continue;
-      }
-
-      let datePart = '';
-      let mealPart = '';
-
-      if (line.includes('\t')) {
-        const parts = line.split('\t');
-        datePart = parts[0].trim();
-        mealPart = parts.slice(1).join(' ').trim();
-      } else if (line.includes(':')) {
-        const parts = line.split(':');
-        datePart = parts[0].trim();
-        mealPart = parts.slice(1).join(':').trim();
-      } else if (line.includes('|')) {
-        const parts = line.split('|');
-        datePart = parts[0].trim();
-        mealPart = parts.slice(1).join(', ').trim();
-      } else {
-        let matchedDay = '';
-        for (const day of WEEKDAYS) {
-          if (line.includes(day)) {
-            matchedDay = day;
-            break;
-          }
-        }
-
-        if (matchedDay) {
-          const splitIdx = line.indexOf(matchedDay) + matchedDay.length;
-          datePart = line.substring(0, splitIdx).trim();
-          mealPart = line.substring(splitIdx).replace(/^[-:,\s]+/, '').trim();
-        } else {
-          datePart = 'Belirtilmedi';
-          mealPart = line;
-        }
-      }
-
-      let foundDayName = 'Pazartesi';
-      for (const d of WEEKDAYS) {
-        if (datePart.includes(d) || line.includes(d)) {
-          foundDayName = d;
-          break;
-        }
-      }
-
-      parsedList.push({
-        dateStr: datePart,
-        dayName: foundDayName,
-        mealText: mealPart,
-        items: parseItems(mealPart),
-        isHoliday: false,
-      });
-    }
-
-    setMonthlyEntries(parsedList);
-    setActiveTab('monthly');
-    setFeedback({
-      type: 'success',
-      text: `${parsedList.length} gün başarıyla ayrıştırıldı. ${
-        sundayCount > 0 ? `(${sundayCount} adet Pazar günü otomatik hariç tutuldu).` : ''
-      }`,
-    });
-  };
-
   // Bir günden yemeği çıkar
   const handleRemoveDishFromDay = (dayIndex: number, dishIndex: number) => {
     const updated = [...monthlyEntries];
@@ -958,19 +870,6 @@ export default function AdminListelerPage() {
             <span>✨</span>
             <span>Yeni Liste Oluştur (Otomatik Menü)</span>
           </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('paste')}
-            className={`px-5 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all cursor-pointer flex items-center gap-2 ${
-              activeTab === 'paste'
-                ? 'bg-amber-500 text-white shadow-xs'
-                : 'bg-white text-stone-700 hover:bg-stone-100 border border-stone-200'
-            }`}
-          >
-            <span>📥</span>
-            <span>Toplu Liste Yapıştır (Excel / Word)</span>
-          </button>
         </div>
       </div>
 
@@ -1040,10 +939,15 @@ export default function AdminListelerPage() {
               <p className="text-stone-700 font-bold">Bu ay için henüz menü girilmemiştir.</p>
               <button
                 type="button"
-                onClick={() => setActiveTab('paste')}
-                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs"
+                onClick={() => {
+                  setWizardYear(selectedYear);
+                  setWizardMonth(selectedMonth);
+                  setActiveTab('wizard');
+                }}
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center gap-1.5 mx-auto cursor-pointer shadow-xs transition-colors"
               >
-                📥 Toplu Yapıştırmaya Git
+                <span>✨</span>
+                <span>Sihirbaz ile Menü Oluştur</span>
               </button>
             </div>
           ) : (
@@ -1458,45 +1362,6 @@ export default function AdminListelerPage() {
       )}
 
       {/* 3. SEKME: TOPLU LİSTE YAPIŞTIR */}
-      {activeTab === 'paste' && (
-        <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-6 space-y-5">
-          <div>
-            <h2 className="text-lg font-black text-stone-900">
-              📥 Excel veya Word&apos;den Toplu Menü Yapıştır
-            </h2>
-            <p className="text-xs sm:text-sm text-stone-500 mt-1">
-              Listenizi doğrudan yapıştırın; her günün yemekleri otomatik olarak ayrıştırılacak ve veritabanıyla eşlenecektir.
-            </p>
-          </div>
-
-          <textarea
-            rows={12}
-            value={pasteText}
-            onChange={(e) => setPasteText(e.target.value)}
-            placeholder={`1 Eylül 2026 Salı	ŞEHRİYE ÇORBASI, YEŞİL FASÜLYE, YOĞURTLU MAKARNA, MEYVE, SALATABAR
-2 Eylül 2026 Çarşamba	MERCİMEK ÇORBASI, FIRIN TAVUK, BULGUR PİLAVI, AYRAN, SALATABAR`}
-            className="w-full p-4 rounded-xl border border-stone-300 font-mono text-xs leading-relaxed focus:outline-none focus:border-amber-500 bg-stone-50"
-          />
-
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setPasteText('')}
-              className="px-4 py-2 rounded-xl text-stone-500 hover:bg-stone-100 text-xs font-bold"
-            >
-              Temizle
-            </button>
-            <button
-              type="button"
-              onClick={handleParsePasteText}
-              className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-black transition-all shadow-xs cursor-pointer"
-            >
-              ⚡ Listeyi Çözümle ve Tabloya Aktar
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* VERİTABANINDAN YEMEK SEÇİCİ & ANINDA YENİ YEMEK EKLEME MODALI */}
       {pickerDayIndex !== null && (
         (() => {
