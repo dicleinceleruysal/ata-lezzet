@@ -163,7 +163,7 @@ export default function DailyMenuRating({ dateStr, isToday }: DailyMenuRatingPro
                 }`}
                 title={
                   hasVotedInSession
-                    ? `Bugünkü notunuz: ${userRating} Yıldız (Sayfa yenilenene kadar kilitli)`
+                    ? `Bugünkü notunuz: ${userRating} Yıldız`
                     : `${star} Yıldız - ${getScoreLabel(star)}`
                 }
                 aria-label={`${star} Yıldız`}
@@ -190,15 +190,15 @@ export default function DailyMenuRating({ dateStr, isToday }: DailyMenuRatingPro
           })}
         </div>
 
-        {/* Durum / Kilit Bildirimi */}
+        {/* Durum Bildirimi */}
         <div className="h-4 text-[11px] font-bold text-center sm:text-right">
           {feedbackText ? (
             <span className="text-emerald-700 animate-in fade-in">
-              ✨ {feedbackText} (Sayfa yenilenene kadar kilitli)
+              ✨ {feedbackText}
             </span>
           ) : hasVotedInSession ? (
             <span className="text-amber-800 font-bold flex items-center gap-1">
-              <span>🔒 Verdiğiniz Not: {userRating} Yıldız</span>
+              <span>⭐ Verdiğiniz Not: {userRating} Yıldız</span>
               <span className="text-[10px] text-stone-500 font-medium">(Kaydedildi)</span>
             </span>
           ) : hoverRating ? (
