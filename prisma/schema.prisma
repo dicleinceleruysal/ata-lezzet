@@ -91,7 +91,9 @@ model MenuRating {
   id        String   @id @default(cuid())
   dateStr   String   // e.g. "22 Eylül 2026"
   score     Int      // 1..5
+  userId    String?  // Tekil kullanıcı kimliği (1 kullanıcı = 1 oy)
   createdAt DateTime @default(now())
 
   @@index([dateStr])
+  @@index([userId])
 }

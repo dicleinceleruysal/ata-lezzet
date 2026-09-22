@@ -17,6 +17,7 @@ interface IndividualVote {
   id: string;
   dateStr: string;
   score: number;
+  userId?: string | null;
   createdAt: string;
 }
 
@@ -399,14 +400,21 @@ export default function AdminPuanlamaPage() {
                         </div>
                         <div>
                           <div className="font-bold text-stone-900 text-sm">{vote.dateStr} Menüsü</div>
-                          <div className="text-xs text-stone-400">
-                            {new Date(vote.createdAt).toLocaleString('tr-TR', {
-                              day: '2-digit',
-                              month: 'long',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
+                          <div className="text-xs text-stone-400 flex items-center gap-2 flex-wrap mt-0.5">
+                            <span>
+                              {new Date(vote.createdAt).toLocaleString('tr-TR', {
+                                day: '2-digit',
+                                month: 'long',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                            {vote.userId && (
+                              <span className="bg-stone-100 text-stone-600 px-2 py-0.5 rounded text-[10px] font-mono border border-stone-200">
+                                👤 {vote.userId.length > 16 ? vote.userId.slice(0, 14) + '…' : vote.userId}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
