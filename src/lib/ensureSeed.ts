@@ -1,825 +1,947 @@
 import type { PrismaClient } from '@prisma/client';
 
-export const INITIAL_MEALS: Array<{ name: string; category: string; calories: number }> = [
-  {
-    "name": "Fırında Karnıyarık",
-    "category": "ana_yemek",
-    "calories": 260
-  },
-  {
-    "name": "TAVUK SOTE",
-    "category": "ana_yemek",
-    "calories": 250
-  },
-  {
-    "name": "Orman Kebabı",
-    "category": "ana_yemek",
-    "calories": 310
-  },
-  {
-    "name": "ŞEHRİYELİ PİRİNÇ PİLAVI",
-    "category": "yan_yemek",
-    "calories": 230
-  },
-  {
-    "name": "SEBZELİ BULGUR PİLAVI",
-    "category": "yan_yemek",
-    "calories": 185
-  },
-  {
-    "name": "Cevizli Baklava (2 Dilim)",
-    "category": "tatli",
-    "calories": 280
-  },
-  {
-    "name": "ISPANAKLI BÖREK",
-    "category": "yan_yemek",
-    "calories": 240
-  },
-  {
-    "name": "ŞEHRİYELİ BULGUR PİLAVI",
-    "category": "yan_yemek",
-    "calories": 200
-  },
-  {
-    "name": "MERCİMEK ÇORBASI",
-    "category": "corba",
-    "calories": 125
-  },
-  {
-    "name": "ARNAVUT CİĞERİ",
-    "category": "ana_yemek",
-    "calories": 310
-  },
-  {
-    "name": "BULGUR PİLAVI",
-    "category": "yan_yemek",
-    "calories": 195
-  },
-  {
-    "name": "AYRAN",
-    "category": "icecek",
-    "calories": 70
-  },
-  {
-    "name": "SALATABAR",
-    "category": "salata",
-    "calories": 55
-  },
-  {
-    "name": "TANDIR ÇORBASI",
-    "category": "corba",
-    "calories": 160
-  },
-  {
-    "name": "BİBER DOLMASI",
-    "category": "ana_yemek",
-    "calories": 220
-  },
-  {
-    "name": "PEYNİRLİ MAKARNA",
-    "category": "yan_yemek",
-    "calories": 240
-  },
-  {
-    "name": "PROFİTEROL",
-    "category": "tatli",
-    "calories": 260
-  },
-  {
-    "name": "IZGARA KÖFTE",
-    "category": "ana_yemek",
-    "calories": 270
-  },
-  {
-    "name": "TARHANA ÇORBASI",
-    "category": "corba",
-    "calories": 115
-  },
-  {
-    "name": "MENEMEN",
-    "category": "ana_yemek",
-    "calories": 190
-  },
-  {
-    "name": "MAKARNA",
-    "category": "yan_yemek",
-    "calories": 220
-  },
-  {
-    "name": "YOĞURT ÇORBASI",
-    "category": "corba",
-    "calories": 125
-  },
-  {
-    "name": "TAVUK ŞİNİTSEL",
-    "category": "ana_yemek",
-    "calories": 310
-  },
-  {
-    "name": "SPAGETTİ MAKARNA",
-    "category": "yan_yemek",
-    "calories": 225
-  },
-  {
-    "name": "FIRIN SÜTLAÇ",
-    "category": "tatli",
-    "calories": 210
-  },
-  {
-    "name": "EZOGELİN ÇORBA",
-    "category": "corba",
-    "calories": 120
-  },
-  {
-    "name": "ISPANAK YEMEĞİ",
-    "category": "ana_yemek",
-    "calories": 160
-  },
-  {
-    "name": "FIRIN MAKARNA",
-    "category": "yan_yemek",
-    "calories": 270
-  },
-  {
-    "name": "DOMATES ÇORBASI",
-    "category": "corba",
-    "calories": 105
-  },
-  {
-    "name": "PİZZA",
-    "category": "ana_yemek",
-    "calories": 320
-  },
-  {
-    "name": "PATATES KIZARTMASI",
-    "category": "yan_yemek",
-    "calories": 250
-  },
-  {
-    "name": "İÇECEK",
-    "category": "icecek",
-    "calories": 80
-  },
-  {
-    "name": "KABAK DOLMA",
-    "category": "ana_yemek",
-    "calories": 210
-  },
-  {
-    "name": "ERİŞTE",
-    "category": "yan_yemek",
-    "calories": 220
-  },
-  {
-    "name": "BROKOLİ ÇORBASI",
-    "category": "corba",
-    "calories": 85
-  },
-  {
-    "name": "ÇÖKERTME KEBABI",
-    "category": "ana_yemek",
-    "calories": 370
-  },
-  {
-    "name": "PİDE",
-    "category": "ana_yemek",
-    "calories": 320
-  },
-  {
-    "name": "PİRİNÇ PİLAVI",
-    "category": "yan_yemek",
-    "calories": 230
-  },
-  {
-    "name": "CACIK",
-    "category": "salata",
-    "calories": 70
-  },
-  {
-    "name": "YAYLA ÇORBASI",
-    "category": "corba",
-    "calories": 130
-  },
-  {
-    "name": "KARNIYARIK",
-    "category": "ana_yemek",
-    "calories": 260
-  },
-  {
-    "name": "MEYVE",
-    "category": "tatli",
-    "calories": 55
-  },
-  {
-    "name": "KURU FASULYE",
-    "category": "ana_yemek",
-    "calories": 250
-  },
-  {
-    "name": "TURŞU",
-    "category": "salata",
-    "calories": 20
-  },
-  {
-    "name": "İZMİR KÖFTE",
-    "category": "ana_yemek",
-    "calories": 310
-  },
-  {
-    "name": "SÜTLAÇ",
-    "category": "tatli",
-    "calories": 210
-  },
-  {
-    "name": "DÜĞÜN ÇORBASI",
-    "category": "corba",
-    "calories": 145
-  },
-  {
-    "name": "TAS KEBABI",
-    "category": "ana_yemek",
-    "calories": 320
-  },
-  {
-    "name": "LAHMACUN",
-    "category": "ana_yemek",
-    "calories": 240
-  },
-  {
-    "name": "ŞEHRİYE ÇORBASI",
-    "category": "corba",
-    "calories": 110
-  },
-  {
-    "name": "TAVUK DÖNER",
-    "category": "ana_yemek",
-    "calories": 260
-  },
-  {
-    "name": "ET KAVURMA",
-    "category": "ana_yemek",
-    "calories": 340
-  },
-  {
-    "name": "BEZELYE YEMEĞİ",
-    "category": "ana_yemek",
-    "calories": 190
-  },
-  {
-    "name": "FIRIN TAVUK",
-    "category": "ana_yemek",
-    "calories": 270
-  },
-  {
-    "name": "KEMALPAŞA",
-    "category": "tatli",
-    "calories": 210
-  },
-  {
-    "name": "KIYMALI BÖREK",
-    "category": "yan_yemek",
-    "calories": 280
-  },
-  {
-    "name": "GÜVEÇTE KÖFTE",
-    "category": "ana_yemek",
-    "calories": 320
-  },
-  {
-    "name": "TAVUK KAVURMA",
-    "category": "ana_yemek",
-    "calories": 270
-  },
-  {
-    "name": "YOĞURTLU MAKARNA",
-    "category": "yan_yemek",
-    "calories": 230
-  },
-  {
-    "name": "KÖYLÜM ÇORBA",
-    "category": "corba",
-    "calories": 120
-  },
-  {
-    "name": "ET DÖNER",
-    "category": "ana_yemek",
-    "calories": 280
-  },
-  {
-    "name": "SOĞUK ÇORBA",
-    "category": "corba",
-    "calories": 110
-  },
-  {
-    "name": "ROSTO KÖFTE",
-    "category": "ana_yemek",
-    "calories": 310
-  },
-  {
-    "name": "PATATES PÜRESİ",
-    "category": "yan_yemek",
-    "calories": 160
-  },
-  {
-    "name": "SOSLU MAKARNA",
-    "category": "yan_yemek",
-    "calories": 230
-  },
-  {
-    "name": "PATATES OTURTMA",
-    "category": "ana_yemek",
-    "calories": 280
-  },
-  {
-    "name": "AĞLAYAN PASTA",
-    "category": "tatli",
-    "calories": 250
-  },
-  {
-    "name": "YALANCI MANTI",
-    "category": "ana_yemek",
-    "calories": 320
-  },
-  {
-    "name": "PATATES SALATASI",
-    "category": "salata",
-    "calories": 150
-  },
-  {
-    "name": "ÇOBAN KAVURMA",
-    "category": "ana_yemek",
-    "calories": 330
-  },
-  {
-    "name": "SEBZE ÇORBASI",
-    "category": "corba",
-    "calories": 90
-  },
-  {
-    "name": "HAVUÇ ÇORBASI",
-    "category": "corba",
-    "calories": 95
-  },
+export const INITIAL_MEALS: Array<{ name: string; category: string; calories: number; imageUrl?: string | null }> = [
   {
     "name": "ADANA KEBAP",
     "category": "ana_yemek",
-    "calories": 310
-  },
-  {
-    "name": "ETLİ MEVSİM TÜRLÜ",
-    "category": "ana_yemek",
-    "calories": 240
-  },
-  {
-    "name": "HAŞHAŞLI REVANİ",
-    "category": "tatli",
-    "calories": 260
-  },
-  {
-    "name": "MANTAR ÇORBASI",
-    "category": "corba",
-    "calories": 100
-  },
-  {
-    "name": "ÇITIR PİLİÇ",
-    "category": "ana_yemek",
-    "calories": 310
-  },
-  {
-    "name": "PÜRELİ ANTRİKOT",
-    "category": "ana_yemek",
-    "calories": 360
-  },
-  {
-    "name": "MEYHANE PİLAVI",
-    "category": "yan_yemek",
-    "calories": 200
-  },
-  {
-    "name": "KARIŞIK KIZARTMA",
-    "category": "ana_yemek",
-    "calories": 280
-  },
-  {
-    "name": "PATLICAN MUSAKKA",
-    "category": "ana_yemek",
-    "calories": 270
-  },
-  {
-    "name": "KALBURA BASTI TATLISI",
-    "category": "tatli",
-    "calories": 260
-  },
-  {
-    "name": "KADINBUDU KÖFTE",
-    "category": "ana_yemek",
-    "calories": 290
-  },
-  {
-    "name": "BARBUNYA YEMEĞİ",
-    "category": "ana_yemek",
-    "calories": 260
-  },
-  {
-    "name": "KREMALI MANTAR ÇORBASI",
-    "category": "corba",
-    "calories": 155
-  },
-  {
-    "name": "TEL ŞEHRİYE ÇORBASI",
-    "category": "corba",
-    "calories": 110
-  },
-  {
-    "name": "ARABAŞI ÇORBASI",
-    "category": "corba",
-    "calories": 135
-  },
-  {
-    "name": "TAVUKSUYU ÇORBA",
-    "category": "corba",
-    "calories": 120
-  },
-  {
-    "name": "TOYGA ÇORBASI",
-    "category": "corba",
-    "calories": 125
-  },
-  {
-    "name": "MISIR ÇORBASI",
-    "category": "corba",
-    "calories": 120
-  },
-  {
-    "name": "TAZE FASÜLYE",
-    "category": "ana_yemek",
-    "calories": 160
-  },
-  {
-    "name": "MANTI",
-    "category": "ana_yemek",
-    "calories": 340
-  },
-  {
-    "name": "KAVURMA",
-    "category": "ana_yemek",
-    "calories": 340
-  },
-  {
-    "name": "ROSTO ET",
-    "category": "ana_yemek",
-    "calories": 290
-  },
-  {
-    "name": "FIRINDA TAVUK PİRZOLA",
-    "category": "ana_yemek",
-    "calories": 280
-  },
-  {
-    "name": "ETLİ KURU FASÜLYE",
-    "category": "ana_yemek",
-    "calories": 290
-  },
-  {
-    "name": "MEVSİM TÜRLÜ",
-    "category": "ana_yemek",
-    "calories": 180
-  },
-  {
-    "name": "KABAK SANDAL",
-    "category": "ana_yemek",
-    "calories": 220
-  },
-  {
-    "name": "TAVUK ÇÖPŞİŞ",
-    "category": "ana_yemek",
-    "calories": 260
-  },
-  {
-    "name": "ETLİ PATATES YEMEĞİ",
-    "category": "ana_yemek",
-    "calories": 280
-  },
-  {
-    "name": "ELBASAN TAVA",
-    "category": "ana_yemek",
-    "calories": 340
-  },
-  {
-    "name": "SEMİZ YEMEĞİ",
-    "category": "ana_yemek",
-    "calories": 150
-  },
-  {
-    "name": "MİSKET KÖFTE",
-    "category": "ana_yemek",
-    "calories": 280
-  },
-  {
-    "name": "ETLİ NOHUT",
-    "category": "ana_yemek",
-    "calories": 290
-  },
-  {
-    "name": "HAMBURGER",
-    "category": "ana_yemek",
-    "calories": 360
-  },
-  {
-    "name": "ÇİN USULÜ TAVUK",
-    "category": "ana_yemek",
-    "calories": 260
-  },
-  {
-    "name": "HASANPAŞA KÖFTE",
-    "category": "ana_yemek",
-    "calories": 330
+    "calories": 310,
+    "imageUrl": "/dishes/adana_kebap.jpg"
   },
   {
     "name": "ANKARA TAVA",
     "category": "ana_yemek",
-    "calories": 360
+    "calories": 360,
+    "imageUrl": "/dishes/ankara_tava.jpg"
   },
   {
-    "name": "MANTAR KAVURMA",
-    "category": "ana_yemek",
-    "calories": 170
+    "name": "ARABAŞI ÇORBASI",
+    "category": "corba",
+    "calories": 135,
+    "imageUrl": "/dishes/arabasi_corbasi.jpg"
   },
   {
-    "name": "IZGARA KANAT",
+    "name": "ARNAVUT CİĞERİ",
     "category": "ana_yemek",
-    "calories": 290
-  },
-  {
-    "name": "TAVUK FAJİTA",
-    "category": "ana_yemek",
-    "calories": 280
-  },
-  {
-    "name": "İSLİM KEBABI",
-    "category": "ana_yemek",
-    "calories": 320
+    "calories": 310,
+    "imageUrl": "/dishes/arnavut_cigeri.jpg"
   },
   {
     "name": "AVCI BÖREĞİ",
     "category": "yan_yemek",
-    "calories": 290
+    "calories": 290,
+    "imageUrl": "/dishes/avci_boregi.jpg"
   },
   {
-    "name": "SEBZELİ PİRİNÇ PİLAVI",
-    "category": "yan_yemek",
-    "calories": 215
+    "name": "AYRAN",
+    "category": "icecek",
+    "calories": 70,
+    "imageUrl": "https://images.unsplash.com/photo-1556881286-fc6915169721?w=600&auto=format&fit=crop&q=80"
   },
   {
-    "name": "BİBER KIZARTMASI",
-    "category": "yan_yemek",
-    "calories": 150
-  },
-  {
-    "name": "PEYNİRLİ BÖREK",
-    "category": "yan_yemek",
-    "calories": 260
-  },
-  {
-    "name": "PATATESLİ KOL BÖREĞİ",
-    "category": "yan_yemek",
-    "calories": 260
-  },
-  {
-    "name": "ŞAKŞUKA",
-    "category": "salata",
-    "calories": 120
+    "name": "AĞLAYAN PASTA",
+    "category": "tatli",
+    "calories": 250,
+    "imageUrl": "/dishes/aglayan_pasta.jpg"
   },
   {
     "name": "AŞURE",
     "category": "tatli",
-    "calories": 240
+    "calories": 240,
+    "imageUrl": "/dishes/asure.jpg"
   },
   {
-    "name": "KOMPOSTO",
-    "category": "tatli",
-    "calories": 110
-  },
-  {
-    "name": "TİRAMİSU",
-    "category": "tatli",
-    "calories": 240
-  },
-  {
-    "name": "GELİN TÜLÜ TATLISI",
-    "category": "tatli",
-    "calories": 230
-  },
-  {
-    "name": "SUPANGELE",
-    "category": "tatli",
-    "calories": 200
-  },
-  {
-    "name": "PUDİNG",
-    "category": "tatli",
-    "calories": 165
-  },
-  {
-    "name": "KIBRIS TATLISI",
-    "category": "tatli",
-    "calories": 270
-  },
-  {
-    "name": "ISLAK KEK",
-    "category": "tatli",
-    "calories": 250
-  },
-  {
-    "name": "KAZANDİBİ",
-    "category": "tatli",
-    "calories": 190
-  },
-  {
-    "name": "TERBİYELİ ET HAŞLAMA",
+    "name": "BARBUNYA YEMEĞİ",
     "category": "ana_yemek",
-    "calories": 290
+    "calories": 260,
+    "imageUrl": "/dishes/barbunya_yemegi.jpg"
   },
   {
-    "name": "KREMALI MANTAR KAVURMA",
+    "name": "BEZELYE YEMEĞİ",
     "category": "ana_yemek",
-    "calories": 220
+    "calories": 190,
+    "imageUrl": "/dishes/bezelye_yemegi.jpg"
   },
   {
     "name": "BEĞENDİLİ KEBAP",
     "category": "ana_yemek",
-    "calories": 370
+    "calories": 370,
+    "imageUrl": "/dishes/begendili_kebap.jpg"
   },
   {
-    "name": "LAVAŞ ÜSTÜ TAVUK TANTUNİ",
+    "name": "BROKOLİ ÇORBASI",
+    "category": "corba",
+    "calories": 85,
+    "imageUrl": "/dishes/brokoli_corbasi.jpg"
+  },
+  {
+    "name": "BULGUR PİLAVI",
+    "category": "yan_yemek",
+    "calories": 195,
+    "imageUrl": "/dishes/bulgur_pilavi.jpg"
+  },
+  {
+    "name": "BİBER DOLMASI",
     "category": "ana_yemek",
-    "calories": 320
+    "calories": 220,
+    "imageUrl": "/dishes/biber_dolmasi.jpg"
   },
   {
-    "name": "PATATES YEMEĞİ",
+    "name": "BİBER KIZARTMASI",
+    "category": "yan_yemek",
+    "calories": 150,
+    "imageUrl": "/dishes/biber_kizartmasi.jpg"
+  },
+  {
+    "name": "CACIK",
+    "category": "salata",
+    "calories": 70,
+    "imageUrl": "/dishes/cacik.jpg"
+  },
+  {
+    "name": "Cevizli Baklava (2 Dilim)",
+    "category": "tatli",
+    "calories": 280,
+    "imageUrl": "/dishes/cevizli_baklava_2_dilim.jpg"
+  },
+  {
+    "name": "DOMATES ÇORBASI",
+    "category": "corba",
+    "calories": 105,
+    "imageUrl": "/dishes/domates_corbasi.jpg"
+  },
+  {
+    "name": "DÜĞÜN ÇORBASI",
+    "category": "corba",
+    "calories": 145,
+    "imageUrl": "/dishes/dugun_corbasi.jpg"
+  },
+  {
+    "name": "ELBASAN TAVA",
     "category": "ana_yemek",
-    "calories": 210
+    "calories": 340,
+    "imageUrl": "/dishes/elbasan_tava.jpg"
   },
   {
-    "name": "PEYNİRLİ ERİŞTE",
+    "name": "ERİŞTE",
     "category": "yan_yemek",
-    "calories": 245
+    "calories": 220,
+    "imageUrl": "/dishes/eriste.jpg"
   },
   {
-    "name": "PAÇANGA BÖREĞİ",
-    "category": "yan_yemek",
-    "calories": 300
+    "name": "ET DÖNER",
+    "category": "ana_yemek",
+    "calories": 280,
+    "imageUrl": "/dishes/et_doner.jpg"
   },
   {
-    "name": "SEBZELİ TAVUKLU BÖREK",
+    "name": "ET KAVURMA",
+    "category": "ana_yemek",
+    "calories": 340,
+    "imageUrl": "/dishes/et_kavurma.jpg"
+  },
+  {
+    "name": "ETLİ KURU FASÜLYE",
+    "category": "ana_yemek",
+    "calories": 290,
+    "imageUrl": "/dishes/etli_kuru_fasulye.jpg"
+  },
+  {
+    "name": "ETLİ MEVSİM TÜRLÜ",
+    "category": "ana_yemek",
+    "calories": 240,
+    "imageUrl": "/dishes/etli_mevsim_turlu.jpg"
+  },
+  {
+    "name": "ETLİ NOHUT",
+    "category": "ana_yemek",
+    "calories": 290,
+    "imageUrl": "/dishes/etli_nohut.jpg"
+  },
+  {
+    "name": "ETLİ PATATES YEMEĞİ",
+    "category": "ana_yemek",
+    "calories": 280,
+    "imageUrl": "/dishes/etli_patates_yemegi.jpg"
+  },
+  {
+    "name": "EZOGELİN ÇORBA",
+    "category": "corba",
+    "calories": 120,
+    "imageUrl": "/dishes/ezogelin_corba.jpg"
+  },
+  {
+    "name": "FIRIN MAKARNA",
     "category": "yan_yemek",
-    "calories": 270
+    "calories": 270,
+    "imageUrl": "/dishes/firin_makarna.jpg"
+  },
+  {
+    "name": "FIRIN SÜTLAÇ",
+    "category": "tatli",
+    "calories": 210,
+    "imageUrl": "/dishes/firin_sutlac.jpg"
+  },
+  {
+    "name": "FIRIN TAVUK",
+    "category": "ana_yemek",
+    "calories": 270,
+    "imageUrl": "/dishes/firin_tavuk.jpg"
   },
   {
     "name": "FIRINDA BAHARATLI PATATES",
     "category": "yan_yemek",
-    "calories": 180
-  },
-  {
-    "name": "ŞEHRİYE PİLAVI",
-    "category": "yan_yemek",
-    "calories": 220
-  },
-  {
-    "name": "YEŞİL MERCİMEK",
-    "category": "ana_yemek",
-    "calories": 240
-  },
-  {
-    "name": "KARNABAHAR GRATEN",
-    "category": "ana_yemek",
-    "calories": 230
-  },
-  {
-    "name": "KIYMALI PIRASA",
-    "category": "ana_yemek",
-    "calories": 190
-  },
-  {
-    "name": "KREMALI TAVUK",
-    "category": "ana_yemek",
-    "calories": 310
-  },
-  {
-    "name": "FIRINDA SOSLU TAVUK BAGET",
-    "category": "ana_yemek",
-    "calories": 260
-  },
-  {
-    "name": "KÖRİLİ TAVUK",
-    "category": "ana_yemek",
-    "calories": 270
-  },
-  {
-    "name": "TAVUK ŞNİTZEL",
-    "category": "ana_yemek",
-    "calories": 310
-  },
-  {
-    "name": "KREMALI MANTARLI TAVUK",
-    "category": "ana_yemek",
-    "calories": 320
+    "calories": 180,
+    "imageUrl": "/dishes/firinda_baharatli_patates.jpg"
   },
   {
     "name": "FIRINDA SEBZELİ TAVUK",
     "category": "ana_yemek",
-    "calories": 260
+    "calories": 260,
+    "imageUrl": "/dishes/firinda_sebzeli_tavuk.jpg"
   },
   {
-    "name": "TAVUKLU SARAY SARMASI",
+    "name": "FIRINDA SOSLU TAVUK BAGET",
     "category": "ana_yemek",
-    "calories": 310
+    "calories": 260,
+    "imageUrl": "/dishes/firinda_soslu_tavuk_baget.jpg"
   },
   {
-    "name": "TAVUKLU ÇÖKERTME KEBABI",
+    "name": "FIRINDA TAVUK PİRZOLA",
     "category": "ana_yemek",
-    "calories": 330
+    "calories": 280,
+    "imageUrl": "/dishes/firinda_tavuk_pirzola.jpg"
   },
   {
-    "name": "SOYA SOSLU TAVUK",
+    "name": "Fırında Karnıyarık",
     "category": "ana_yemek",
-    "calories": 260
+    "calories": 260,
+    "imageUrl": "/dishes/karniyarik.jpg"
   },
   {
-    "name": "TAVUKLU BÜRYAN PİLAVI",
-    "category": "ana_yemek",
-    "calories": 360
-  },
-  {
-    "name": "TAVUK ŞİŞ KEBAP",
-    "category": "ana_yemek",
-    "calories": 270
-  },
-  {
-    "name": "TAVUK SULTAN KEBABI",
-    "category": "ana_yemek",
-    "calories": 350
-  },
-  {
-    "name": "TAVUK BEYTİ",
-    "category": "ana_yemek",
-    "calories": 340
-  },
-  {
-    "name": "TAVUKLU MAKLUBE",
-    "category": "ana_yemek",
-    "calories": 380
-  },
-  {
-    "name": "TAVUKLU ORMAN KEBABI",
-    "category": "ana_yemek",
-    "calories": 280
-  },
-  {
-    "name": "LAZANYA",
-    "category": "ana_yemek",
-    "calories": 340
-  },
-  {
-    "name": "YEŞİL FASÜLYE",
-    "category": "ana_yemek",
-    "calories": 160
-  },
-  {
-    "name": "YEŞİL MERCİMEK ÇORBASI",
-    "category": "corba",
-    "calories": 125
-  },
-  {
-    "name": "PİLAV",
-    "category": "yan_yemek",
-    "calories": 230
-  },
-  {
-    "name": "KARPUZ",
+    "name": "GELİN TÜLÜ TATLISI",
     "category": "tatli",
-    "calories": 45
+    "calories": 230,
+    "imageUrl": "/dishes/gelin_tulu_tatlisi.jpg"
   },
   {
-    "name": "EZOGELİN ÇORBASI",
+    "name": "GÜVEÇTE KÖFTE",
+    "category": "ana_yemek",
+    "calories": 320,
+    "imageUrl": "/dishes/guvecte_kofte.jpg"
+  },
+  {
+    "name": "HAMBURGER",
+    "category": "ana_yemek",
+    "calories": 360,
+    "imageUrl": "/dishes/hamburger.jpg"
+  },
+  {
+    "name": "HASANPAŞA KÖFTE",
+    "category": "ana_yemek",
+    "calories": 330,
+    "imageUrl": "/dishes/hasanpasa_kofte.jpg"
+  },
+  {
+    "name": "HAVUÇ ÇORBASI",
     "category": "corba",
-    "calories": 120
+    "calories": 95,
+    "imageUrl": "/dishes/havuc_corbasi.jpg"
   },
   {
-    "name": "SALATA",
-    "category": "salata",
-    "calories": 55
+    "name": "HAŞHAŞLI REVANİ",
+    "category": "tatli",
+    "calories": 260,
+    "imageUrl": "/dishes/hashasli_revani.jpg"
+  },
+  {
+    "name": "ISLAK KEK",
+    "category": "tatli",
+    "calories": 250,
+    "imageUrl": "/dishes/islak_kek.jpg"
+  },
+  {
+    "name": "ISPANAK YEMEĞİ",
+    "category": "ana_yemek",
+    "calories": 160,
+    "imageUrl": "/dishes/ispanak_yemegi.jpg"
+  },
+  {
+    "name": "ISPANAKLI BÖREK",
+    "category": "yan_yemek",
+    "calories": 240,
+    "imageUrl": "/dishes/ispanakli_borek.jpg"
+  },
+  {
+    "name": "IZGARA KANAT",
+    "category": "ana_yemek",
+    "calories": 290,
+    "imageUrl": "/dishes/izgara_kanat.jpg"
+  },
+  {
+    "name": "IZGARA KÖFTE",
+    "category": "ana_yemek",
+    "calories": 270,
+    "imageUrl": "/dishes/izgara_kofte.jpg"
+  },
+  {
+    "name": "KABAK DOLMA",
+    "category": "ana_yemek",
+    "calories": 210,
+    "imageUrl": "/dishes/kabak_dolma.jpg"
+  },
+  {
+    "name": "KABAK SANDAL",
+    "category": "ana_yemek",
+    "calories": 220,
+    "imageUrl": "/dishes/kabak_sandal.jpg"
+  },
+  {
+    "name": "KADINBUDU KÖFTE",
+    "category": "ana_yemek",
+    "calories": 290,
+    "imageUrl": "/dishes/kadinbudu_kofte.jpg"
+  },
+  {
+    "name": "KALBURA BASTI TATLISI",
+    "category": "tatli",
+    "calories": 260,
+    "imageUrl": "/dishes/kalbura_basti_tatlisi.jpg"
+  },
+  {
+    "name": "KARIŞIK KIZARTMA",
+    "category": "ana_yemek",
+    "calories": 280,
+    "imageUrl": "/dishes/karisik_kizartma.jpg"
+  },
+  {
+    "name": "KARNABAHAR GRATEN",
+    "category": "ana_yemek",
+    "calories": 230,
+    "imageUrl": "/dishes/karnabahar_graten.jpg"
+  },
+  {
+    "name": "KARNIYARIK",
+    "category": "ana_yemek",
+    "calories": 260,
+    "imageUrl": "/dishes/karniyarik.jpg"
+  },
+  {
+    "name": "KAVURMA",
+    "category": "ana_yemek",
+    "calories": 340,
+    "imageUrl": "/dishes/kavurma.jpg"
+  },
+  {
+    "name": "KAZANDİBİ",
+    "category": "tatli",
+    "calories": 190,
+    "imageUrl": "/dishes/kazandibi.jpg"
+  },
+  {
+    "name": "KEMALPAŞA",
+    "category": "tatli",
+    "calories": 210,
+    "imageUrl": "/dishes/kemalpasa.jpg"
+  },
+  {
+    "name": "KIBRIS TATLISI",
+    "category": "tatli",
+    "calories": 270,
+    "imageUrl": "/dishes/kibris_tatlisi.jpg"
+  },
+  {
+    "name": "KIYMALI BÖREK",
+    "category": "yan_yemek",
+    "calories": 280,
+    "imageUrl": "/dishes/kiymali_borek.jpg"
+  },
+  {
+    "name": "KIYMALI PIRASA",
+    "category": "ana_yemek",
+    "calories": 190,
+    "imageUrl": "/dishes/kiymali_pirasa.jpg"
+  },
+  {
+    "name": "KOMPOSTO",
+    "category": "tatli",
+    "calories": 110,
+    "imageUrl": "/dishes/komposto.jpg"
+  },
+  {
+    "name": "KREMALI MANTAR KAVURMA",
+    "category": "ana_yemek",
+    "calories": 220,
+    "imageUrl": "/dishes/kremali_mantar_kavurma.jpg"
+  },
+  {
+    "name": "KREMALI MANTARLI TAVUK",
+    "category": "ana_yemek",
+    "calories": 320,
+    "imageUrl": "/dishes/kremali_mantarli_tavuk.jpg"
+  },
+  {
+    "name": "KREMALI TAVUK",
+    "category": "ana_yemek",
+    "calories": 310,
+    "imageUrl": "/dishes/kremali_tavuk.jpg"
+  },
+  {
+    "name": "KURU FASULYE",
+    "category": "ana_yemek",
+    "calories": 250,
+    "imageUrl": "/dishes/kuru_fasulye.jpg"
   },
   {
     "name": "KURU FASÜLYE",
     "category": "ana_yemek",
-    "calories": 250
+    "calories": 250,
+    "imageUrl": "/dishes/kuru_fasulye.jpg"
   },
   {
-    "name": "ÇORBA",
+    "name": "KÖRİLİ TAVUK",
+    "category": "ana_yemek",
+    "calories": 270,
+    "imageUrl": "/dishes/korili_tavuk.jpg"
+  },
+  {
+    "name": "KÖYLÜM ÇORBA",
     "category": "corba",
-    "calories": 115
+    "calories": 120,
+    "imageUrl": "/dishes/koylum_corba.jpg"
+  },
+  {
+    "name": "LAHMACUN",
+    "category": "ana_yemek",
+    "calories": 240,
+    "imageUrl": "/dishes/lahmacun.jpg"
+  },
+  {
+    "name": "LAVAŞ ÜSTÜ TAVUK TANTUNİ",
+    "category": "ana_yemek",
+    "calories": 320,
+    "imageUrl": "/dishes/lavas_ustu_tavuk_tantuni.jpg"
+  },
+  {
+    "name": "LAZANYA",
+    "category": "ana_yemek",
+    "calories": 340,
+    "imageUrl": "/dishes/lazanya.jpg"
+  },
+  {
+    "name": "MAKARNA",
+    "category": "yan_yemek",
+    "calories": 220,
+    "imageUrl": "/dishes/makarna.jpg"
+  },
+  {
+    "name": "MANTAR KAVURMA",
+    "category": "ana_yemek",
+    "calories": 170,
+    "imageUrl": "/dishes/mantar_kavurma.jpg"
+  },
+  {
+    "name": "MANTAR ÇORBASI",
+    "category": "corba",
+    "calories": 100,
+    "imageUrl": "/dishes/mantar_corbasi.jpg"
+  },
+  {
+    "name": "MANTI",
+    "category": "ana_yemek",
+    "calories": 340,
+    "imageUrl": "/dishes/manti.jpg"
+  },
+  {
+    "name": "MENEMEN",
+    "category": "ana_yemek",
+    "calories": 190,
+    "imageUrl": "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    "name": "MERCİMEK ÇORBASI",
+    "category": "corba",
+    "calories": 125,
+    "imageUrl": "/dishes/mercimek_corbasi.jpg"
+  },
+  {
+    "name": "MEVSİM TÜRLÜ",
+    "category": "ana_yemek",
+    "calories": 180,
+    "imageUrl": "/dishes/mevsim_turlu.jpg"
+  },
+  {
+    "name": "MEYHANE PİLAVI",
+    "category": "yan_yemek",
+    "calories": 200,
+    "imageUrl": "/dishes/meyhane_pilavi.jpg"
+  },
+  {
+    "name": "MEYVE",
+    "category": "tatli",
+    "calories": 55,
+    "imageUrl": "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    "name": "MISIR ÇORBASI",
+    "category": "corba",
+    "calories": 120,
+    "imageUrl": "/dishes/misir_corbasi.jpg"
+  },
+  {
+    "name": "MİSKET KÖFTE",
+    "category": "ana_yemek",
+    "calories": 280,
+    "imageUrl": "/dishes/misket_kofte.jpg"
+  },
+  {
+    "name": "Orman Kebabı",
+    "category": "ana_yemek",
+    "calories": 310,
+    "imageUrl": "https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    "name": "PATATES KIZARTMASI",
+    "category": "yan_yemek",
+    "calories": 250,
+    "imageUrl": "/dishes/patates_kizartmasi.jpg"
+  },
+  {
+    "name": "PATATES OTURTMA",
+    "category": "ana_yemek",
+    "calories": 280,
+    "imageUrl": "/dishes/patates_oturtma.jpg"
+  },
+  {
+    "name": "PATATES PÜRESİ",
+    "category": "yan_yemek",
+    "calories": 160,
+    "imageUrl": "/dishes/patates_puresi.jpg"
+  },
+  {
+    "name": "PATATES SALATASI",
+    "category": "salata",
+    "calories": 150,
+    "imageUrl": "/dishes/patates_salatasi.jpg"
+  },
+  {
+    "name": "PATATES YEMEĞİ",
+    "category": "ana_yemek",
+    "calories": 210,
+    "imageUrl": "/dishes/patates_yemegi.jpg"
+  },
+  {
+    "name": "PATATESLİ KOL BÖREĞİ",
+    "category": "yan_yemek",
+    "calories": 260,
+    "imageUrl": "/dishes/patatesli_kol_boregi.jpg"
+  },
+  {
+    "name": "PATLICAN MUSAKKA",
+    "category": "ana_yemek",
+    "calories": 270,
+    "imageUrl": "/dishes/patlican_musakka.jpg"
+  },
+  {
+    "name": "PAÇANGA BÖREĞİ",
+    "category": "yan_yemek",
+    "calories": 300,
+    "imageUrl": "/dishes/pacanga_boregi.jpg"
+  },
+  {
+    "name": "PEYNİRLİ BÖREK",
+    "category": "yan_yemek",
+    "calories": 260,
+    "imageUrl": "/dishes/peynirli_borek.jpg"
+  },
+  {
+    "name": "PEYNİRLİ ERİŞTE",
+    "category": "yan_yemek",
+    "calories": 245,
+    "imageUrl": "/dishes/peynirli_eriste.jpg"
+  },
+  {
+    "name": "PEYNİRLİ MAKARNA",
+    "category": "yan_yemek",
+    "calories": 240,
+    "imageUrl": "/dishes/peynirli_makarna.jpg"
+  },
+  {
+    "name": "PROFİTEROL",
+    "category": "tatli",
+    "calories": 260,
+    "imageUrl": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    "name": "PUDİNG",
+    "category": "tatli",
+    "calories": 165,
+    "imageUrl": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    "name": "PÜRELİ ANTRİKOT",
+    "category": "ana_yemek",
+    "calories": 360,
+    "imageUrl": "/dishes/pureli_antrikot.jpg"
+  },
+  {
+    "name": "PİDE",
+    "category": "ana_yemek",
+    "calories": 320,
+    "imageUrl": "/dishes/pide.jpg"
+  },
+  {
+    "name": "PİLAV",
+    "category": "yan_yemek",
+    "calories": 230,
+    "imageUrl": "/dishes/pilav.jpg"
+  },
+  {
+    "name": "PİRİNÇ PİLAVI",
+    "category": "yan_yemek",
+    "calories": 230,
+    "imageUrl": "/dishes/pirinc_pilavi.jpg"
+  },
+  {
+    "name": "PİZZA",
+    "category": "ana_yemek",
+    "calories": 320,
+    "imageUrl": "/dishes/pizza.jpg"
+  },
+  {
+    "name": "ROSTO ET",
+    "category": "ana_yemek",
+    "calories": 290,
+    "imageUrl": "/dishes/rosto_et.jpg"
+  },
+  {
+    "name": "ROSTO KÖFTE",
+    "category": "ana_yemek",
+    "calories": 310,
+    "imageUrl": "/dishes/rosto_kofte.jpg"
+  },
+  {
+    "name": "SALATA",
+    "category": "salata",
+    "calories": 55,
+    "imageUrl": "/dishes/salata.jpg"
+  },
+  {
+    "name": "SALATABAR",
+    "category": "salata",
+    "calories": 55,
+    "imageUrl": "/dishes/salatabar.jpg"
+  },
+  {
+    "name": "SEBZE ÇORBASI",
+    "category": "corba",
+    "calories": 90,
+    "imageUrl": "/dishes/sebze_corbasi.jpg"
+  },
+  {
+    "name": "SEBZELİ BULGUR PİLAVI",
+    "category": "yan_yemek",
+    "calories": 185,
+    "imageUrl": "/dishes/sebzeli_bulgur_pilavi.jpg"
+  },
+  {
+    "name": "SEBZELİ PİRİNÇ PİLAVI",
+    "category": "yan_yemek",
+    "calories": 215,
+    "imageUrl": "/dishes/sebzeli_pirinc_pilavi.jpg"
+  },
+  {
+    "name": "SEBZELİ TAVUKLU BÖREK",
+    "category": "yan_yemek",
+    "calories": 270,
+    "imageUrl": "/dishes/sebzeli_tavuklu_borek.jpg"
+  },
+  {
+    "name": "SEMİZ YEMEĞİ",
+    "category": "ana_yemek",
+    "calories": 150,
+    "imageUrl": "/dishes/semiz_yemegi.jpg"
+  },
+  {
+    "name": "SOSLU MAKARNA",
+    "category": "yan_yemek",
+    "calories": 230,
+    "imageUrl": "/dishes/soslu_makarna.jpg"
+  },
+  {
+    "name": "SOYA SOSLU TAVUK",
+    "category": "ana_yemek",
+    "calories": 260,
+    "imageUrl": "/dishes/soya_soslu_tavuk.jpg"
+  },
+  {
+    "name": "SOĞUK ÇORBA",
+    "category": "corba",
+    "calories": 110,
+    "imageUrl": "/dishes/soguk_corba.jpg"
+  },
+  {
+    "name": "SPAGETTİ MAKARNA",
+    "category": "yan_yemek",
+    "calories": 225,
+    "imageUrl": "/dishes/spagetti_makarna.jpg"
+  },
+  {
+    "name": "SUPANGELE",
+    "category": "tatli",
+    "calories": 200,
+    "imageUrl": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    "name": "SÜTLAÇ",
+    "category": "tatli",
+    "calories": 210,
+    "imageUrl": "/dishes/firin_sutlac.jpg"
+  },
+  {
+    "name": "TANDIR ÇORBASI",
+    "category": "corba",
+    "calories": 160,
+    "imageUrl": "/dishes/tandir_corbasi.jpg"
+  },
+  {
+    "name": "TARHANA ÇORBASI",
+    "category": "corba",
+    "calories": 115,
+    "imageUrl": "/dishes/tarhana_corbasi.jpg"
+  },
+  {
+    "name": "TAS KEBABI",
+    "category": "ana_yemek",
+    "calories": 320,
+    "imageUrl": "/dishes/tas_kebabi.jpg"
+  },
+  {
+    "name": "TAVUK BEYTİ",
+    "category": "ana_yemek",
+    "calories": 340,
+    "imageUrl": "/dishes/tavuk_beyti.jpg"
+  },
+  {
+    "name": "TAVUK DÖNER",
+    "category": "ana_yemek",
+    "calories": 260,
+    "imageUrl": "/dishes/tavuk_doner.jpg"
+  },
+  {
+    "name": "TAVUK FAJİTA",
+    "category": "ana_yemek",
+    "calories": 280,
+    "imageUrl": "/dishes/tavuk_fajita.jpg"
+  },
+  {
+    "name": "TAVUK KAVURMA",
+    "category": "ana_yemek",
+    "calories": 270,
+    "imageUrl": "/dishes/tavuk_kavurma.jpg"
+  },
+  {
+    "name": "TAVUK SOTE",
+    "category": "ana_yemek",
+    "calories": 250,
+    "imageUrl": "/dishes/tavuk_sote.jpg"
+  },
+  {
+    "name": "TAVUK SULTAN KEBABI",
+    "category": "ana_yemek",
+    "calories": 350,
+    "imageUrl": "/dishes/tavuk_sultan_kebabi.jpg"
+  },
+  {
+    "name": "TAVUK ÇÖPŞİŞ",
+    "category": "ana_yemek",
+    "calories": 260,
+    "imageUrl": "/dishes/tavuk_copsis.jpg"
+  },
+  {
+    "name": "TAVUK ŞNİTZEL",
+    "category": "ana_yemek",
+    "calories": 310,
+    "imageUrl": "/dishes/tavuk_snitzel.jpg"
+  },
+  {
+    "name": "TAVUK ŞİŞ KEBAP",
+    "category": "ana_yemek",
+    "calories": 270,
+    "imageUrl": "/dishes/tavuk_sis_kebap.jpg"
+  },
+  {
+    "name": "TAVUKLU BÜRYAN PİLAVI",
+    "category": "ana_yemek",
+    "calories": 360,
+    "imageUrl": "/dishes/tavuklu_buryan_pilavi.jpg"
+  },
+  {
+    "name": "TAVUKLU MAKLUBE",
+    "category": "ana_yemek",
+    "calories": 380,
+    "imageUrl": "/dishes/tavuklu_maklube.jpg"
+  },
+  {
+    "name": "TAVUKLU ORMAN KEBABI",
+    "category": "ana_yemek",
+    "calories": 280,
+    "imageUrl": "/dishes/tavuklu_orman_kebabi.jpg"
+  },
+  {
+    "name": "TAVUKLU SARAY SARMASI",
+    "category": "ana_yemek",
+    "calories": 310,
+    "imageUrl": "/dishes/tavuklu_saray_sarmasi.jpg"
+  },
+  {
+    "name": "TAVUKLU ÇÖKERTME KEBABI",
+    "category": "ana_yemek",
+    "calories": 330,
+    "imageUrl": "/dishes/tavuklu_cokertme_kebabi.jpg"
+  },
+  {
+    "name": "TAVUKSUYU ÇORBA",
+    "category": "corba",
+    "calories": 120,
+    "imageUrl": "/dishes/tavuksuyu_corba.jpg"
+  },
+  {
+    "name": "TAZE FASÜLYE",
+    "category": "ana_yemek",
+    "calories": 160,
+    "imageUrl": "/dishes/taze_fasulye.jpg"
+  },
+  {
+    "name": "TERBİYELİ ET HAŞLAMA",
+    "category": "ana_yemek",
+    "calories": 290,
+    "imageUrl": "/dishes/terbiyeli_et_haslama.jpg"
+  },
+  {
+    "name": "TOYGA ÇORBASI",
+    "category": "corba",
+    "calories": 125,
+    "imageUrl": "/dishes/toyga_corbasi.jpg"
+  },
+  {
+    "name": "TURŞU",
+    "category": "salata",
+    "calories": 20,
+    "imageUrl": "/dishes/tursu.jpg"
+  },
+  {
+    "name": "TİRAMİSU",
+    "category": "tatli",
+    "calories": 240,
+    "imageUrl": "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    "name": "YALANCI MANTI",
+    "category": "ana_yemek",
+    "calories": 320,
+    "imageUrl": "/dishes/yalanci_manti.jpg"
+  },
+  {
+    "name": "YAYLA ÇORBASI",
+    "category": "corba",
+    "calories": 130,
+    "imageUrl": "/dishes/yayla_corbasi.jpg"
+  },
+  {
+    "name": "YEŞİL MERCİMEK",
+    "category": "ana_yemek",
+    "calories": 240,
+    "imageUrl": "/dishes/yesil_mercimek.jpg"
+  },
+  {
+    "name": "YEŞİL MERCİMEK ÇORBASI",
+    "category": "corba",
+    "calories": 125,
+    "imageUrl": "/dishes/yesil_mercimek_corbasi.jpg"
+  },
+  {
+    "name": "YOĞURT ÇORBASI",
+    "category": "corba",
+    "calories": 125,
+    "imageUrl": "/dishes/yayla_corbasi.jpg"
+  },
+  {
+    "name": "YOĞURTLU MAKARNA",
+    "category": "yan_yemek",
+    "calories": 230,
+    "imageUrl": "/dishes/yogurtlu_makarna.jpg"
+  },
+  {
+    "name": "ÇITIR PİLİÇ",
+    "category": "ana_yemek",
+    "calories": 310,
+    "imageUrl": "/dishes/citir_pilic.jpg"
+  },
+  {
+    "name": "ÇOBAN KAVURMA",
+    "category": "ana_yemek",
+    "calories": 330,
+    "imageUrl": "/dishes/coban_kavurma.jpg"
+  },
+  {
+    "name": "ÇÖKERTME KEBABI",
+    "category": "ana_yemek",
+    "calories": 370,
+    "imageUrl": "/dishes/cokertme_kebabi.jpg"
+  },
+  {
+    "name": "ÇİN USULÜ TAVUK",
+    "category": "ana_yemek",
+    "calories": 260,
+    "imageUrl": "/dishes/cin_usulu_tavuk.jpg"
+  },
+  {
+    "name": "İSLİM KEBABI",
+    "category": "ana_yemek",
+    "calories": 320,
+    "imageUrl": "/dishes/islim_kebabi.jpg"
+  },
+  {
+    "name": "İZMİR KÖFTE",
+    "category": "ana_yemek",
+    "calories": 310,
+    "imageUrl": "/dishes/izmir_kofte.jpg"
+  },
+  {
+    "name": "İÇECEK",
+    "category": "icecek",
+    "calories": 80,
+    "imageUrl": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    "name": "ŞAKŞUKA",
+    "category": "salata",
+    "calories": 120,
+    "imageUrl": "/dishes/saksuka.jpg"
+  },
+  {
+    "name": "ŞEHRİYE PİLAVI",
+    "category": "yan_yemek",
+    "calories": 220,
+    "imageUrl": "/dishes/sehriye_pilavi.jpg"
+  },
+  {
+    "name": "ŞEHRİYE ÇORBASI",
+    "category": "corba",
+    "calories": 110,
+    "imageUrl": "/dishes/sehriye_corbasi.jpg"
+  },
+  {
+    "name": "ŞEHRİYELİ BULGUR PİLAVI",
+    "category": "yan_yemek",
+    "calories": 200,
+    "imageUrl": "/dishes/sehriyeli_bulgur_pilavi.jpg"
+  },
+  {
+    "name": "ŞEHRİYELİ PİRİNÇ PİLAVI",
+    "category": "yan_yemek",
+    "calories": 230,
+    "imageUrl": "/dishes/sehriyeli_pirinc_pilavi.jpg"
   }
 ];
 
@@ -868,6 +990,7 @@ export async function ensureDatabaseSeeded(prisma: PrismaClient): Promise<void> 
               name: m.name,
               category: m.category,
               calories: m.calories,
+              imageUrl: m.imageUrl || null,
               isActive: true,
             },
           });
