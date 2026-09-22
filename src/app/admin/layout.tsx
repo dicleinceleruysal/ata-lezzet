@@ -42,6 +42,12 @@ export default function AdminLayout({
                 >
                   📝 Notlar
                 </Link>
+                <Link
+                  href="/admin/puanlama"
+                  className="px-3 py-2 rounded-lg text-stone-700 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+                >
+                  ⭐ Puanlama
+                </Link>
               </div>
             </div>
 
@@ -66,6 +72,9 @@ export default function AdminLayout({
           </Link>
           <Link href="/admin/notlar" className="text-stone-700 hover:text-amber-700 py-1">
             📝 Notlar
+          </Link>
+          <Link href="/admin/puanlama" className="text-stone-700 hover:text-amber-700 py-1">
+            ⭐ Puanlama
           </Link>
         </div>
       </nav>

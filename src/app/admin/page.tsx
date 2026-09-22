@@ -10,6 +10,13 @@ export default async function AdminDashboard() {
   const pendingNoteCount = await prisma.userNote.count({
     where: { status: 'pending' },
   });
+  const ratingCount = await prisma.menuRating.count();
+  const allRatings = await prisma.menuRating.findMany();
+  const overallAverage =
+    ratingCount > 0
+      ? Number((allRatings.reduce((sum, r) => sum + r.score, 0) / ratingCount).toFixed(1))
+      : 0;
+
   const activeWeeklyPlan = await prisma.weeklyPlan.findFirst({
     orderBy: { createdAt: 'desc' },
     include: {
@@ -32,12 +39,12 @@ export default async function AdminDashboard() {
           Yönetici Paneli
         </h1>
         <p className="text-sm text-stone-500 mt-1">
-          Aylık ve günlük menüleri belirleyin, yemek arşivini yönetin ve kullanıcı geri bildirimlerini inceleyin.
+          Aylık ve günlük menüleri belirleyin, yemek arşivini yönetin, menü puanlamalarını ve kullanıcı geri bildirimlerini inceleyin.
         </p>
       </div>
 
       {/* İstatistik Kartları */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <Link
           href="/admin/listeler"
           className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs hover:border-amber-400 hover:shadow-md transition-all group"
@@ -104,6 +111,32 @@ export default async function AdminDashboard() {
           </div>
           <p className="text-xs text-stone-600 font-semibold mt-3 group-hover:underline">
             Notları Yönet &rarr;
+          </p>
+        </Link>
+
+        <Link
+          href="/admin/puanlama"
+          className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs hover:border-amber-400 hover:shadow-md transition-all group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">
+              Menü Puanlama
+            </span>
+            <span className="text-2xl">⭐</span>
+          </div>
+          <div className="mt-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-stone-900">
+                {overallAverage > 0 ? `★ ${overallAverage.toFixed(1)}` : '0.0'}
+              </span>
+              <span className="text-xs text-stone-500 font-medium">/ 5.0</span>
+            </div>
+            <div className="text-xs text-stone-500 font-medium mt-1">
+              {ratingCount > 0 ? `${ratingCount} Kullanıcı Oyu` : 'Henüz oy verilmedi'}
+            </div>
+          </div>
+          <p className="text-xs text-amber-600 font-semibold mt-3 group-hover:underline">
+            Puanları İncele &rarr;
           </p>
         </Link>
       </div>

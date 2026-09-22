@@ -13,18 +13,21 @@ export default function DailyMenuRating({ dateStr, isToday }: DailyMenuRatingPro
   const [userRating, setUserRating] = useState<number | null>(null);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [hasVotedInSession, setHasVotedInSession] = useState<boolean>(false);
   const [feedbackText, setFeedbackText] = useState<string | null>(null);
 
   // Günün puanını ve kullanıcının geçmiş oyunu yükle
   useEffect(() => {
     if (!dateStr) return;
 
-    // LocalStorage kontrolü (kullanıcı daha önce bu güne oy verdi mi?)
+    // Sayfa yenilenene kadar tekrar oy verilmesini engellemek için oturum kontrolü
     const savedVote = localStorage.getItem(`rate_${dateStr}`);
     if (savedVote) {
       setUserRating(Number(savedVote));
+      setHasVotedInSession(true);
     } else {
       setUserRating(null);
+      setHasVotedInSession(false);
     }
     setFeedbackText(null);
 
@@ -41,10 +44,12 @@ export default function DailyMenuRating({ dateStr, isToday }: DailyMenuRatingPro
   }, [dateStr]);
 
   const handleRate = async (score: number) => {
-    if (!isToday || isSubmitting) return;
+    // Sadece bugün puanlanabilir, işlem devam ederken veya sayfa yenilenmeden tekrar oy verilemez
+    if (!isToday || isSubmitting || hasVotedInSession) return;
 
     setIsSubmitting(true);
     setUserRating(score);
+    setHasVotedInSession(true); // Sayfa yenilenmeden tekrar oy verilemez kilidi
     localStorage.setItem(`rate_${dateStr}`, String(score));
 
     try {
@@ -58,12 +63,12 @@ export default function DailyMenuRating({ dateStr, isToday }: DailyMenuRatingPro
       if (res.ok && data) {
         setAverage(data.average);
         setTotalCount(data.totalCount);
-        setFeedbackText(`Puanınız (${score}/5) kaydedildi. Teşekkürler!`);
+        setFeedbackText(`Notunuz (${score}/5) başarıyla kaydedildi.`);
       } else {
-        setFeedbackText('Puan kaydedildi.');
+        setFeedbackText('Notunuz kaydedildi.');
       }
     } catch {
-      setFeedbackText('Puan kaydedildi.');
+      setFeedbackText('Notunuz kaydedildi.');
     } finally {
       setIsSubmitting(false);
     }
@@ -86,17 +91,15 @@ export default function DailyMenuRating({ dateStr, isToday }: DailyMenuRatingPro
     }
   };
 
-  const activeStarCount = hoverRating || userRating || 0;
+  const activeStarCount = (hasVotedInSession ? userRating : (hoverRating || userRating)) || 0;
 
   // SADECE BUGÜN PUANLANABİLİR KURALI:
   // Eğer incelenen gün bugün değilse:
   if (!isToday) {
     if (totalCount === 0) {
-      // Başka günlerde ve henüz puan yoksa hiçbir şey gösterme
       return null;
     }
 
-    // Geçmişte verilmiş puan varsa salt okunur özet göster
     return (
       <div className="w-full bg-stone-50 p-3.5 rounded-2xl border border-stone-200 text-xs text-stone-600 flex flex-col sm:flex-row items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -111,7 +114,7 @@ export default function DailyMenuRating({ dateStr, isToday }: DailyMenuRatingPro
     );
   }
 
-  // BUGÜN İSE: Tam interaktif 5 yıldızlı puanlama kartı
+  // BUGÜN İSE: Puanlama kartı (Sayfa yenilenmeden tekrar oy verilemez)
   return (
     <div className="w-full bg-gradient-to-r from-amber-50/90 via-orange-50/70 to-amber-50/90 p-4 sm:p-5 rounded-2xl border border-amber-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 transition-all">
       {/* Sol Başlık & Bilgi */}
@@ -143,16 +146,26 @@ export default function DailyMenuRating({ dateStr, isToday }: DailyMenuRatingPro
         <div className="flex items-center gap-1.5">
           {[1, 2, 3, 4, 5].map((star) => {
             const isFilled = star <= activeStarCount;
+            const isDisabled = isSubmitting || hasVotedInSession;
+
             return (
               <button
                 key={star}
                 type="button"
                 onClick={() => handleRate(star)}
-                onMouseEnter={() => setHoverRating(star)}
-                onMouseLeave={() => setHoverRating(null)}
-                disabled={isSubmitting}
-                className="p-1 text-2xl sm:text-3xl transition-transform hover:scale-125 active:scale-90 cursor-pointer disabled:cursor-not-allowed select-none focus:outline-none"
-                title={`${star} Yıldız - ${getScoreLabel(star)}`}
+                onMouseEnter={() => !hasVotedInSession && setHoverRating(star)}
+                onMouseLeave={() => !hasVotedInSession && setHoverRating(null)}
+                disabled={isDisabled}
+                className={`p-1 text-2xl sm:text-3xl transition-transform select-none focus:outline-none ${
+                  isDisabled
+                    ? 'cursor-default opacity-95'
+                    : 'hover:scale-125 active:scale-90 cursor-pointer'
+                }`}
+                title={
+                  hasVotedInSession
+                    ? `Bugünkü notunuz: ${userRating} Yıldız (Sayfa yenilenene kadar kilitli)`
+                    : `${star} Yıldız - ${getScoreLabel(star)}`
+                }
                 aria-label={`${star} Yıldız`}
               >
                 <svg
@@ -177,16 +190,21 @@ export default function DailyMenuRating({ dateStr, isToday }: DailyMenuRatingPro
           })}
         </div>
 
-        {/* Yıldız Açıklaması veya Teşekkür Mesajı */}
+        {/* Durum / Kilit Bildirimi */}
         <div className="h-4 text-[11px] font-bold text-center sm:text-right">
           {feedbackText ? (
-            <span className="text-emerald-700 animate-in fade-in">✨ {feedbackText}</span>
+            <span className="text-emerald-700 animate-in fade-in">
+              ✨ {feedbackText} (Sayfa yenilenene kadar kilitli)
+            </span>
+          ) : hasVotedInSession ? (
+            <span className="text-amber-800 font-bold flex items-center gap-1">
+              <span>🔒 Verdiğiniz Not: {userRating} Yıldız</span>
+              <span className="text-[10px] text-stone-500 font-medium">(Kaydedildi)</span>
+            </span>
           ) : hoverRating ? (
             <span className="text-amber-700">
               {hoverRating} Yıldız - {getScoreLabel(hoverRating)}
             </span>
-          ) : userRating ? (
-            <span className="text-amber-800/80">Verdiğiniz Not: {userRating} Yıldız</span>
           ) : (
             <span className="text-stone-400">Notunuzu seçin (1 - 5 Yıldız)</span>
           )}

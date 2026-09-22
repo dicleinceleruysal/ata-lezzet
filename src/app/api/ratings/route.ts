@@ -7,9 +7,79 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const dateStr = searchParams.get('dateStr');
+    const isAdmin = searchParams.get('admin') === 'true';
+
+    // Yönetici Detaylı Görünümü
+    if (isAdmin) {
+      const allRatings = await prisma.menuRating.findMany({
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Gün bazlı gruplama
+      const byDate: Record<
+        string,
+        {
+          dateStr: string;
+          totalScore: number;
+          count: number;
+          distribution: { 1: number; 2: number; 3: number; 4: number; 5: number };
+          latestVoteAt: string;
+        }
+      > = {};
+
+      allRatings.forEach((r) => {
+        if (!byDate[r.dateStr]) {
+          byDate[r.dateStr] = {
+            dateStr: r.dateStr,
+            totalScore: 0,
+            count: 0,
+            distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+            latestVoteAt: r.createdAt.toISOString(),
+          };
+        }
+        byDate[r.dateStr].totalScore += r.score;
+        byDate[r.dateStr].count += 1;
+        const s = Math.min(Math.max(r.score, 1), 5) as 1 | 2 | 3 | 4 | 5;
+        byDate[r.dateStr].distribution[s] += 1;
+      });
+
+      const daysSummary = Object.values(byDate).map((item) => ({
+        dateStr: item.dateStr,
+        average: Number((item.totalScore / item.count).toFixed(1)),
+        count: item.count,
+        distribution: item.distribution,
+        latestVoteAt: item.latestVoteAt,
+      }));
+
+      // Genel toplamlar
+      const totalVotes = allRatings.length;
+      const overallAverage =
+        totalVotes > 0
+          ? Number(
+              (
+                allRatings.reduce((sum, r) => sum + r.score, 0) / totalVotes
+              ).toFixed(1)
+            )
+          : 0;
+
+      return NextResponse.json(
+        {
+          stats: {
+            totalVotes,
+            overallAverage,
+            ratedDaysCount: daysSummary.length,
+          },
+          days: daysSummary,
+          recentVotes: allRatings.slice(0, 50),
+        },
+        {
+          headers: { 'Cache-Control': 'no-store, max-age=0' },
+        }
+      );
+    }
 
     if (!dateStr) {
-      // Tüm tarihlerin özet puanlarını döndür
+      // Tüm tarihlerin basit özet puanlarını döndür
       const allRatings = await prisma.menuRating.findMany();
       const summaryByDate: Record<string, { totalScore: number; count: number }> = {};
 
@@ -105,5 +175,38 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Puan kaydedilirken hata:', error);
     return NextResponse.json({ error: 'Puan kaydedilemedi' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const dateStr = searchParams.get('dateStr');
+
+    if (id) {
+      await prisma.menuRating.delete({
+        where: { id },
+      });
+      return NextResponse.json({ success: true, message: 'Değerlendirme silindi.' });
+    }
+
+    if (dateStr) {
+      await prisma.menuRating.deleteMany({
+        where: { dateStr },
+      });
+      return NextResponse.json({
+        success: true,
+        message: `${dateStr} gününün tüm puanları sıfırlandı.`,
+      });
+    }
+
+    return NextResponse.json(
+      { error: 'Silinecek id veya dateStr belirtilmedi.' },
+      { status: 400 }
+    );
+  } catch (error) {
+    console.error('Puan silinirken hata:', error);
+    return NextResponse.json({ error: 'Puan silinemedi' }, { status: 500 });
   }
 }
