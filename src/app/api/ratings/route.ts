@@ -3,15 +3,41 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
+const MONTH_NAMES = [
+  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+];
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const dateStr = searchParams.get('dateStr');
     const isAdmin = searchParams.get('admin') === 'true';
 
-    // Yönetici Detaylı Görünümü
+    // Aktif yılı ve ayı belirle (Varsayılan: Şu anki yıl ve ay)
+    const now = new Date();
+    const activeYear = searchParams.get('year')
+      ? parseInt(searchParams.get('year')!, 10)
+      : now.getFullYear();
+    const activeMonth = searchParams.get('month')
+      ? parseInt(searchParams.get('month')!, 10)
+      : now.getMonth() + 1; // 1-12
+
+    // Sadece bulunduğumuz ayın başlangıç ve bitiş zaman aralığı (Ay yenilendiğinde otomatik sıfırlanır)
+    const startOfMonth = new Date(Date.UTC(activeYear, activeMonth - 1, 1, 0, 0, 0, 0));
+    const endOfMonth = new Date(Date.UTC(activeYear, activeMonth, 0, 23, 59, 59, 999));
+
+    const monthName = `${MONTH_NAMES[activeMonth - 1]} ${activeYear}`;
+
+    // Yönetici Detaylı Görünümü (Sadece içinde bulunulan ay)
     if (isAdmin) {
-      const allRatings = await prisma.menuRating.findMany({
+      const monthRatings = await prisma.menuRating.findMany({
+        where: {
+          createdAt: {
+            gte: startOfMonth,
+            lte: endOfMonth,
+          },
+        },
         orderBy: { createdAt: 'desc' },
       });
 
@@ -27,7 +53,7 @@ export async function GET(request: Request) {
         }
       > = {};
 
-      allRatings.forEach((r) => {
+      monthRatings.forEach((r) => {
         if (!byDate[r.dateStr]) {
           byDate[r.dateStr] = {
             dateStr: r.dateStr,
@@ -51,26 +77,30 @@ export async function GET(request: Request) {
         latestVoteAt: item.latestVoteAt,
       }));
 
-      // Genel toplamlar
-      const totalVotes = allRatings.length;
+      const totalVotes = monthRatings.length;
       const overallAverage =
         totalVotes > 0
           ? Number(
               (
-                allRatings.reduce((sum, r) => sum + r.score, 0) / totalVotes
+                monthRatings.reduce((sum, r) => sum + r.score, 0) / totalVotes
               ).toFixed(1)
             )
           : 0;
 
       return NextResponse.json(
         {
+          currentMonth: {
+            year: activeYear,
+            month: activeMonth,
+            monthName,
+          },
           stats: {
             totalVotes,
             overallAverage,
             ratedDaysCount: daysSummary.length,
           },
           days: daysSummary,
-          recentVotes: allRatings.slice(0, 50),
+          recentVotes: monthRatings.slice(0, 50),
         },
         {
           headers: { 'Cache-Control': 'no-store, max-age=0' },
@@ -79,11 +109,18 @@ export async function GET(request: Request) {
     }
 
     if (!dateStr) {
-      // Tüm tarihlerin basit özet puanlarını döndür
-      const allRatings = await prisma.menuRating.findMany();
-      const summaryByDate: Record<string, { totalScore: number; count: number }> = {};
+      // Tüm tarihlerin içinde bulunulan aya ait özet puanları
+      const monthRatings = await prisma.menuRating.findMany({
+        where: {
+          createdAt: {
+            gte: startOfMonth,
+            lte: endOfMonth,
+          },
+        },
+      });
 
-      allRatings.forEach((r) => {
+      const summaryByDate: Record<string, { totalScore: number; count: number }> = {};
+      monthRatings.forEach((r) => {
         if (!summaryByDate[r.dateStr]) {
           summaryByDate[r.dateStr] = { totalScore: 0, count: 0 };
         }
@@ -105,9 +142,15 @@ export async function GET(request: Request) {
       });
     }
 
-    // Belirli bir günün puanları
+    // Belirli bir günün puanları (Bu ay içerisindeki)
     const ratings = await prisma.menuRating.findMany({
-      where: { dateStr },
+      where: {
+        dateStr,
+        createdAt: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
+      },
     });
 
     if (ratings.length === 0) {
@@ -158,9 +201,19 @@ export async function POST(request: Request) {
       },
     });
 
-    // Güncel ortalamayı hesapla
+    // Güncel ay aralığında ortalamayı hesapla
+    const now = new Date();
+    const startOfMonth = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0));
+    const endOfMonth = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999));
+
     const ratings = await prisma.menuRating.findMany({
-      where: { dateStr: dateStr.trim() },
+      where: {
+        dateStr: dateStr.trim(),
+        createdAt: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
+      },
     });
 
     const totalScore = ratings.reduce((sum, r) => sum + r.score, 0);
@@ -183,6 +236,16 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     const dateStr = searchParams.get('dateStr');
+    const resetAll = searchParams.get('resetAll') === 'true';
+
+    // Tüm puanlamaları tamamen sıfırla (ay yenilendiğinde veya talep edildiğinde)
+    if (resetAll) {
+      await prisma.menuRating.deleteMany({});
+      return NextResponse.json({
+        success: true,
+        message: 'Tüm puanlamalar başarıyla sıfırlandı.',
+      });
+    }
 
     if (id) {
       await prisma.menuRating.delete({
@@ -197,12 +260,12 @@ export async function DELETE(request: Request) {
       });
       return NextResponse.json({
         success: true,
-        message: `${dateStr} gününün tüm puanları sıfırlandı.`,
+        message: `${dateStr} gününün puanları sıfırlandı.`,
       });
     }
 
     return NextResponse.json(
-      { error: 'Silinecek id veya dateStr belirtilmedi.' },
+      { error: 'Silinecek id, dateStr veya resetAll belirtilmedi.' },
       { status: 400 }
     );
   } catch (error) {

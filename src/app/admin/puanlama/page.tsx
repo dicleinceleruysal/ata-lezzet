@@ -21,6 +21,11 @@ interface IndividualVote {
 }
 
 interface RatingResponse {
+  currentMonth: {
+    year: number;
+    month: number;
+    monthName: string;
+  };
   stats: {
     totalVotes: number;
     overallAverage: number;
@@ -36,6 +41,7 @@ export default function AdminPuanlamaPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'days' | 'votes'>('days');
 
   const fetchRatings = async () => {
@@ -88,6 +94,26 @@ export default function AdminPuanlamaPage() {
     }
   };
 
+  const handleResetAllCurrentMonth = async () => {
+    const monthTitle = data?.currentMonth?.monthName || 'bu ay';
+    if (!confirm(`DİKKAT: ${monthTitle} için verilen TÜM menü puanlamaları sıfırlanacaktır. Devam etmek istediğinize emin misiniz?`)) {
+      return;
+    }
+    setIsResetting(true);
+    try {
+      const res = await fetch('/api/ratings?resetAll=true', {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Puanlamalar sıfırlanamadı.');
+      await fetchRatings();
+      alert('Tüm puanlamalar başarıyla sıfırlandı.');
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Sıfırlama sırasında hata oluştu.');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   const filteredDays = (data?.days || []).filter((d) =>
     searchTerm.trim() === ''
       ? true
@@ -105,12 +131,15 @@ export default function AdminPuanlamaPage() {
       {/* Üst Başlık & Butonlar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight flex items-center gap-2">
               <span>⭐</span> Menü Puanlamaları & Notlar
             </h1>
+            <span className="px-3 py-0.5 rounded-full bg-amber-500 text-white text-xs font-black shadow-xs">
+              {data?.currentMonth?.monthName || 'Bu Ay'}
+            </span>
             <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-bold">
-              {data?.stats.totalVotes || 0} Değerlendirme
+              {data?.stats.totalVotes || 0} Oy
             </span>
           </div>
           <p className="text-sm text-stone-500 mt-1">
@@ -118,7 +147,15 @@ export default function AdminPuanlamaPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleResetAllCurrentMonth}
+            disabled={isResetting || (data?.stats.totalVotes || 0) === 0}
+            className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            title="İçinde bulunulan ayın tüm puanlamalarını sıfırla"
+          >
+            🧹 {isResetting ? 'Sıfırlanıyor...' : 'Ayı Sıfırla'}
+          </button>
           <button
             onClick={fetchRatings}
             disabled={loading}
@@ -136,11 +173,21 @@ export default function AdminPuanlamaPage() {
         </div>
       </div>
 
-      {/* İstatistik Özet Kartları */}
+      {/* Aylık Döngü Bilgilendirme Notu */}
+      <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 text-xs sm:text-sm text-amber-900 flex items-start sm:items-center gap-2.5">
+        <span className="text-lg">💡</span>
+        <div className="flex-1">
+          <strong>Aylık Döngü Kuralı:</strong> Bu sayfada sadece içinde bulunduğumuz{' '}
+          <strong className="underline underline-offset-2">{data?.currentMonth?.monthName || 'aktif ay'}</strong>{' '}
+          dönemine ait puanlar tutulur. Takvim yeni aya geçtiğinde puanlama sayfası otomatik olarak sıfırlanır ve yeni ayın değerlendirmeleri başlar.
+        </div>
+      </div>
+
+      {/* İstatistik Özet Kartları (Sadece Bu Ay) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-xs">
           <div className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1.5">
-            <span>⭐</span> Genel Ortalama Not
+            <span>⭐</span> Bu Ayın Ortalama Notu
           </div>
           <div className="flex items-baseline gap-2 mt-2">
             <span className="text-3xl sm:text-4xl font-black text-stone-900">
@@ -149,13 +196,13 @@ export default function AdminPuanlamaPage() {
             <span className="text-sm text-stone-400 font-bold">/ 5.0</span>
           </div>
           <div className="text-[11px] text-stone-500 mt-1">
-            Tüm menüler genelinde kullanıcı memnuniyeti
+            {data?.currentMonth?.monthName || 'Bu ay'} menü memnuniyeti
           </div>
         </div>
 
         <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-xs">
           <div className="text-xs font-bold text-orange-700 uppercase tracking-wider flex items-center gap-1.5">
-            <span>🗳️</span> Toplam Verilen Not Sayısı
+            <span>🗳️</span> Bu Ayki Toplam Oy Sayısı
           </div>
           <div className="flex items-baseline gap-2 mt-2">
             <span className="text-3xl sm:text-4xl font-black text-stone-900">
@@ -164,13 +211,13 @@ export default function AdminPuanlamaPage() {
             <span className="text-sm text-stone-400 font-bold">Oy</span>
           </div>
           <div className="text-[11px] text-stone-500 mt-1">
-            Sistemde kayıtlı tekil değerlendirmeler
+            Yalnızca bu ay verilen tekil oylar
           </div>
         </div>
 
         <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-xs">
           <div className="text-xs font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
-            <span>📅</span> Not Alan Günler
+            <span>📅</span> Puan Alan Gün Sayısı
           </div>
           <div className="flex items-baseline gap-2 mt-2">
             <span className="text-3xl sm:text-4xl font-black text-stone-900">
@@ -179,7 +226,7 @@ export default function AdminPuanlamaPage() {
             <span className="text-sm text-stone-400 font-bold">Farklı Gün</span>
           </div>
           <div className="text-[11px] text-stone-500 mt-1">
-            En az bir oy almış günlük menüler
+            Bu ay değerlendirme yapılan günler
           </div>
         </div>
       </div>
@@ -248,10 +295,12 @@ export default function AdminPuanlamaPage() {
                 <div className="bg-white rounded-2xl border border-stone-200 p-12 text-center text-stone-500 space-y-2">
                   <div className="text-4xl">⭐</div>
                   <p className="font-bold text-stone-800">
-                    {searchTerm ? 'Aramanıza uygun değerlendirme bulunamadı.' : 'Henüz hiçbir menü puanlanmamış.'}
+                    {searchTerm
+                      ? 'Aramanıza uygun değerlendirme bulunamadı.'
+                      : `${data?.currentMonth?.monthName || 'Bu ay'} için henüz menü puanlanmamış.`}
                   </p>
                   <p className="text-xs text-stone-400 max-w-md mx-auto">
-                    Kullanıcılar ana sayfada günün menüsünün altındaki 5 yıldızlı puanlama alanından not verdikçe burada gün gün ortalamalar listelenecektir.
+                    Kullanıcılar ana sayfada günün menüsünün altındaki 5 yıldızlı alandan not verdikçe bu ayın ortalamaları burada anlık olarak listelenecektir.
                   </p>
                 </div>
               ) : (
@@ -334,7 +383,9 @@ export default function AdminPuanlamaPage() {
           {activeTab === 'votes' && (
             <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs">
               {filteredVotes.length === 0 ? (
-                <div className="p-12 text-center text-stone-500">Kayıtlı oy bulunamadı.</div>
+                <div className="p-12 text-center text-stone-500">
+                  {data?.currentMonth?.monthName || 'Bu ay'} için henüz oy bulunamadı.
+                </div>
               ) : (
                 <div className="divide-y divide-stone-100">
                   {filteredVotes.map((vote) => (

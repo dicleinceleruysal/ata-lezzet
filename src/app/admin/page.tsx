@@ -10,11 +10,22 @@ export default async function AdminDashboard() {
   const pendingNoteCount = await prisma.userNote.count({
     where: { status: 'pending' },
   });
-  const ratingCount = await prisma.menuRating.count();
-  const allRatings = await prisma.menuRating.findMany();
+  const now = new Date();
+  const startOfMonth = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0));
+  const endOfMonth = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999));
+
+  const monthRatings = await prisma.menuRating.findMany({
+    where: {
+      createdAt: {
+        gte: startOfMonth,
+        lte: endOfMonth,
+      },
+    },
+  });
+  const ratingCount = monthRatings.length;
   const overallAverage =
     ratingCount > 0
-      ? Number((allRatings.reduce((sum, r) => sum + r.score, 0) / ratingCount).toFixed(1))
+      ? Number((monthRatings.reduce((sum, r) => sum + r.score, 0) / ratingCount).toFixed(1))
       : 0;
 
   const activeWeeklyPlan = await prisma.weeklyPlan.findFirst({
@@ -120,7 +131,7 @@ export default async function AdminDashboard() {
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">
-              Menü Puanlama
+              Menü Puanlama (Bu Ay)
             </span>
             <span className="text-2xl">⭐</span>
           </div>
@@ -132,7 +143,7 @@ export default async function AdminDashboard() {
               <span className="text-xs text-stone-500 font-medium">/ 5.0</span>
             </div>
             <div className="text-xs text-stone-500 font-medium mt-1">
-              {ratingCount > 0 ? `${ratingCount} Kullanıcı Oyu` : 'Henüz oy verilmedi'}
+              {ratingCount > 0 ? `${ratingCount} Kullanıcı Oyu (Bu Ay)` : 'Bu ay henüz oy yok'}
             </div>
           </div>
           <p className="text-xs text-amber-600 font-semibold mt-3 group-hover:underline">
