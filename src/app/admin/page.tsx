@@ -2,9 +2,14 @@ import React from 'react';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminDashboard() {
   const mealCount = await prisma.meal.count();
   const noteCount = await prisma.userNote.count();
+  const pendingNoteCount = await prisma.userNote.count({
+    where: { status: 'pending' },
+  });
   const activeWeeklyPlan = await prisma.weeklyPlan.findFirst({
     orderBy: { createdAt: 'desc' },
     include: {
@@ -86,11 +91,19 @@ export default async function AdminDashboard() {
             <span className="text-2xl">📝</span>
           </div>
           <div className="mt-3">
-            <span className="text-3xl font-extrabold text-stone-900">{noteCount}</span>
-            <span className="text-xs text-stone-500 ml-1.5 font-medium">Gelen Not</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-extrabold text-stone-900">{noteCount}</span>
+              <span className="text-xs text-stone-500 font-medium">Toplam Not</span>
+            </div>
+            {pendingNoteCount > 0 && (
+              <div className="text-xs text-amber-600 font-bold mt-1 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                {pendingNoteCount} yeni / bekleyen not
+              </div>
+            )}
           </div>
           <p className="text-xs text-stone-600 font-semibold mt-3 group-hover:underline">
-            Notları Oku &rarr;
+            Notları Yönet &rarr;
           </p>
         </Link>
       </div>
