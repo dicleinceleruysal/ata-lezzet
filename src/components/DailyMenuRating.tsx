@@ -21,7 +21,7 @@ function getClientVoterId(): string {
       }
       localStorage.setItem('ata_voter_id', id);
     }
-    // Cookie'yi de 1 yıllık tazele
+    // Cookie'yi de 1 yıllık sakla
     document.cookie = `ata_voter_id=${encodeURIComponent(id)}; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax`;
     return id;
   } catch {
@@ -33,6 +33,7 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
   const [average, setAverage] = useState<number>(0);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [userRating, setUserRating] = useState<number | null>(null);
+  const [hasVoted, setHasVoted] = useState<boolean>(false);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [feedbackText, setFeedbackText] = useState<string | null>(null);
@@ -42,16 +43,18 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
     if (!currentDate) return;
     const voterId = getClientVoterId();
 
-    // Önce hızlıca yerel hafızadan kullanıcının oyunu göster
+    // Önce yerel hafızadan kullanıcının oyunu yükle
     try {
       const localVote = localStorage.getItem(`rate_${currentDate}`);
       if (localVote) {
         setUserRating(Number(localVote));
+        setHasVoted(true);
       } else {
         setUserRating(null);
+        setHasVoted(false);
       }
     } catch {
-      // Local storage erişim hatası yok sayılır
+      // ignore
     }
 
     try {
@@ -64,8 +67,9 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
         if (typeof data.average === 'number') {
           setAverage(data.average);
           setTotalCount(data.totalCount || 0);
-          if (data.userRating && typeof data.userRating === 'number') {
+          if (data.hasVoted && typeof data.userRating === 'number') {
             setUserRating(data.userRating);
+            setHasVoted(true);
             try {
               localStorage.setItem(`rate_${currentDate}`, String(data.userRating));
             } catch {
@@ -75,7 +79,7 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
         }
       }
     } catch {
-      // Ağ hatasında yerel veri kalır
+      // ignore
     }
   }, []);
 
@@ -84,14 +88,15 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
     loadRatings(dateStr);
   }, [dateStr, loadRatings]);
 
-  // Puan verme / güncelleme işlemi (1 Kullanıcı = 1 Oy garantisi)
+  // Puan verme işlemi (1 KULLANICI = 1 OY KESİN KURALI)
   const handleRate = async (score: number) => {
-    if (isSubmitting || !dateStr) return;
+    // Kullanıcı zaten oy verdiyse veya işlem devam ediyorsa tekrar oy verilemez!
+    if (isSubmitting || hasVoted || !dateStr) return;
 
     const voterId = getClientVoterId();
     setIsSubmitting(true);
-    const previousRating = userRating;
     setUserRating(score);
+    setHasVoted(true); // Anında kilitle (tekrar oylamayı engelle)
 
     try {
       localStorage.setItem(`rate_${dateStr}`, String(score));
@@ -118,11 +123,9 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
         if (data.userRating) {
           setUserRating(data.userRating);
         }
-        setFeedbackText(
-          previousRating && previousRating !== score
-            ? `Notunuz ${score} Yıldız olarak güncellendi.`
-            : `Notunuz (${score}/5) başarıyla kaydedildi!`
-        );
+        setFeedbackText(`Notunuz (${score}/5) başarıyla kaydedildi!`);
+      } else if (data?.alreadyVoted) {
+        setFeedbackText('Bu menüye daha önce oy verdiniz.');
       } else {
         setFeedbackText('Notunuz kaydedildi.');
       }
@@ -130,10 +133,6 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
       setFeedbackText('Notunuz kaydedildi.');
     } finally {
       setIsSubmitting(false);
-      // 4 saniye sonra bildirim yazısını eski haline döndür
-      setTimeout(() => {
-        setFeedbackText(null);
-      }, 4000);
     }
   };
 
@@ -154,7 +153,7 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
     }
   };
 
-  const activeStarCount = hoverRating || userRating || 0;
+  const activeStarCount = hasVoted ? (userRating || 0) : (hoverRating || userRating || 0);
 
   return (
     <div className="w-full bg-gradient-to-r from-amber-50/90 via-orange-50/70 to-amber-50/90 p-4 sm:p-5 rounded-2xl border border-amber-200/90 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 transition-all">
@@ -185,11 +184,11 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
               <span className="text-stone-300">·</span>
               <span className="text-stone-700 font-semibold">{totalCount} Değerlendirme</span>
               <span className="text-stone-300">·</span>
-              <span className="text-[11px] text-stone-400">Her kullanıcı 1 oy</span>
+              <span className="text-[11px] text-stone-400">1 kişi 1 oy</span>
             </div>
           ) : (
             <p className="text-stone-500">
-              Bu menüyü nasıl buldunuz? Yıldızlara tıklayarak 1-5 arası notunuzu verin.
+              Bu menüyü nasıl buldunuz? 1 ile 5 yıldız arasında oyunuzu verin.
             </p>
           )}
         </div>
@@ -201,20 +200,27 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
           {[1, 2, 3, 4, 5].map((star) => {
             const isFilled = star <= activeStarCount;
             const isUserChoice = star === userRating;
+            const isDisabled = isSubmitting || hasVoted;
 
             return (
               <button
                 key={star}
                 type="button"
                 onClick={() => handleRate(star)}
-                onMouseEnter={() => setHoverRating(star)}
-                onMouseLeave={() => setHoverRating(null)}
-                disabled={isSubmitting}
-                className={`p-1 text-2xl sm:text-3xl transition-transform select-none focus:outline-none cursor-pointer hover:scale-125 active:scale-95 relative group ${
-                  isSubmitting ? 'opacity-70 cursor-wait' : ''
+                onMouseEnter={() => !hasVoted && setHoverRating(star)}
+                onMouseLeave={() => !hasVoted && setHoverRating(null)}
+                disabled={isDisabled}
+                className={`p-1 text-2xl sm:text-3xl transition-transform select-none focus:outline-none relative group ${
+                  isDisabled
+                    ? 'cursor-default opacity-95'
+                    : 'cursor-pointer hover:scale-125 active:scale-95'
                 }`}
-                title={`${star} Yıldız - ${getScoreLabel(star)} (Tıklayarak oyunuzu verin veya güncelleyin)`}
-                aria-label={`${star} Yıldız (${getScoreLabel(star)})`}
+                title={
+                  hasVoted
+                    ? `Verdiğiniz Not: ${userRating} Yıldız (Oyunuz kaydedildi)`
+                    : `${star} Yıldız - ${getScoreLabel(star)}`
+                }
+                aria-label={`${star} Yıldız`}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -223,7 +229,7 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
                     isFilled
                       ? 'fill-amber-400 text-amber-500 drop-shadow-xs'
                       : 'fill-stone-200 text-stone-300'
-                  } ${isUserChoice ? 'ring-2 ring-amber-400/50 rounded-full p-0.5' : ''}`}
+                  } ${isUserChoice && hasVoted ? 'scale-105' : ''}`}
                 >
                   <path
                     strokeLinecap="round"
@@ -246,20 +252,20 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
             </span>
           ) : isSubmitting ? (
             <span className="text-amber-700 animate-pulse">Kaydediliyor...</span>
+          ) : hasVoted ? (
+            <span className="text-amber-900 flex items-center gap-1 font-semibold">
+              <span>⭐ Verdiğiniz Not: <strong>{userRating} Yıldız</strong></span>
+              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded">
+                ✓ Kaydedildi
+              </span>
+            </span>
           ) : hoverRating ? (
             <span className="text-amber-800">
               {hoverRating} Yıldız — <span className="font-extrabold">{getScoreLabel(hoverRating)}</span>
             </span>
-          ) : userRating ? (
-            <span className="text-amber-900 flex items-center gap-1">
-              <span>⭐ Verdiğiniz Not: <strong>{userRating} Yıldız</strong></span>
-              <span className="text-[10px] text-stone-500 font-normal">
-                (Değiştirmek için yıldızlara tıklayın)
-              </span>
-            </span>
           ) : (
             <span className="text-stone-400 font-normal">
-              Notunuzu seçin (1 - 5 Yıldız)
+              Notunuzu seçin (Her kullanıcı 1 oy)
             </span>
           )}
         </div>

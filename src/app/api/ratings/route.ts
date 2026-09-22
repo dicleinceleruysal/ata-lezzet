@@ -195,7 +195,7 @@ export async function POST(request: Request) {
     const cleanDateStr = dateStr.trim();
     const roundedScore = Math.round(numericScore);
 
-    // 1 KULLANICI = 1 OY KURALI:
+    // 1 KULLANICI = 1 OY KESİN KURALI:
     // Bu kullanıcının bu gün için daha önce oyu var mı kontrol et:
     const existingVote = await prisma.menuRating.findFirst({
       where: {
@@ -204,26 +204,42 @@ export async function POST(request: Request) {
       },
     });
 
-    let isUpdate = false;
     if (existingVote) {
-      // Mevcut oyunu güncelle (1 kullanıcı = 1 oy garantisi)
-      await prisma.menuRating.update({
-        where: { id: existingVote.id },
-        data: {
-          score: roundedScore,
-        },
+      // Kullanıcı zaten oy vermiş - tekrar oy vermesine veya değiştirmesine izin verme
+      const currentRatings = await prisma.menuRating.findMany({
+        where: { dateStr: cleanDateStr },
       });
-      isUpdate = true;
-    } else {
-      // Yeni oy ekle
-      await prisma.menuRating.create({
-        data: {
-          dateStr: cleanDateStr,
-          score: roundedScore,
-          userId: cleanUserId,
-        },
+      const totalCount = currentRatings.length;
+      const totalScore = currentRatings.reduce((sum, r) => sum + r.score, 0);
+      const average = totalCount > 0 ? Number((totalScore / totalCount).toFixed(1)) : 0;
+
+      const response = NextResponse.json({
+        success: false,
+        alreadyVoted: true,
+        message: 'Bu menü için daha önce oy kullandınız. Her kullanıcı yalnızca 1 kez oy verebilir.',
+        average,
+        totalCount,
+        userRating: existingVote.score,
+        hasVoted: true,
       });
+
+      response.cookies.set('ata_voter_id', cleanUserId, {
+        maxAge: 365 * 24 * 60 * 60,
+        path: '/',
+        sameSite: 'lax',
+      });
+
+      return response;
     }
+
+    // İlk kez oy veriyor: Yeni oyu kaydet
+    await prisma.menuRating.create({
+      data: {
+        dateStr: cleanDateStr,
+        score: roundedScore,
+        userId: cleanUserId,
+      },
+    });
 
     // Güncel günün tüm oylarını ve ortalamasını hesapla
     const ratings = await prisma.menuRating.findMany({
@@ -238,9 +254,7 @@ export async function POST(request: Request) {
 
     const response = NextResponse.json({
       success: true,
-      message: isUpdate
-        ? `Notunuz ${roundedScore} Yıldız olarak güncellendi.`
-        : `Notunuz (${roundedScore}/5) başarıyla kaydedildi!`,
+      message: `Notunuz (${roundedScore}/5) başarıyla kaydedildi!`,
       average,
       totalCount,
       userRating: roundedScore,
