@@ -65,7 +65,7 @@ export default function PrintMenuModal({
                 Yazdırma ve Dışa Aktarma Önizlemesi
               </h3>
               <p className="text-[11px] text-stone-400">
-                {title} (Standart Tablo Formatı)
+                {title} (A4 Dikey Tam Sayfa Tablo)
               </p>
             </div>
           </div>
@@ -103,24 +103,24 @@ export default function PrintMenuModal({
         </div>
 
         {/* Önizleme & Yazdırılabilir Belge Alanı */}
-        <div className="p-4 sm:p-8 overflow-y-auto flex-1 bg-stone-100 print:bg-white print:p-0 print:overflow-visible">
+        <div className="p-4 sm:p-8 overflow-y-auto flex-1 bg-stone-200/70">
           <div
             id="printable-menu-document"
-            className="bg-white p-6 sm:p-8 rounded-xl shadow-xs border border-stone-200 max-w-3xl mx-auto text-black print:shadow-none print:border-none print:p-0 print:max-w-none print:m-0"
+            className="bg-white p-6 sm:p-10 shadow-xl border-2 border-black max-w-4xl mx-auto text-black"
           >
             {/* Tablo Başlığı (Görseldeki gibi: "AĞUSTOS AYI YEMEK LİSTESİ") */}
-            <h1 className="text-base sm:text-xl font-black text-center text-black tracking-wide uppercase mb-3 sm:mb-4">
+            <h1 className="text-lg sm:text-2xl font-black text-center text-black tracking-wide uppercase mb-4 sm:mb-6">
               {title}
             </h1>
 
             {/* 2 Sütunlu Çerçeveli Standart Menü Tablosu */}
-            <table className="w-full border-collapse border-2 border-black text-black text-left">
+            <table className="w-full border-collapse border-2 border-black text-black text-left table-fixed">
               <thead>
                 <tr className="bg-white">
-                  <th className="border-2 border-black py-1.5 sm:py-2 px-2.5 sm:px-3 text-center font-black text-xs sm:text-sm tracking-wider uppercase w-[32%]">
+                  <th className="border-2 border-black py-2 px-3 text-center font-black text-xs sm:text-sm tracking-wider uppercase w-[30%]">
                     TARİH
                   </th>
-                  <th className="border-2 border-black py-1.5 sm:py-2 px-2.5 sm:px-3 text-center font-black text-xs sm:text-sm tracking-wider uppercase w-[68%]">
+                  <th className="border-2 border-black py-2 px-3 text-center font-black text-xs sm:text-sm tracking-wider uppercase w-[70%]">
                     ÖĞLE YEMEĞİ
                   </th>
                 </tr>
@@ -129,15 +129,15 @@ export default function PrintMenuModal({
                 {rows.map((row) => (
                   <tr
                     key={row.dayNumber}
-                    className="border-b border-black hover:bg-amber-50/20 print:hover:bg-transparent page-break-inside-avoid"
+                    className="border-b border-black hover:bg-amber-50/30"
                   >
                     {/* Tarih Sütunu */}
-                    <td className="border border-black py-1 px-2 font-bold text-[10.5px] sm:text-xs text-black whitespace-nowrap align-middle">
+                    <td className="border border-black py-1.5 px-3 font-bold text-[11px] sm:text-xs text-black whitespace-nowrap align-middle">
                       {row.dateStr}
                     </td>
 
                     {/* Öğle Yemeği Sütunu (Pazar günleri boş, hafta içi büyük harf ve virgülle ayrılmış) */}
-                    <td className="border border-black py-1 px-2 font-bold text-[10.5px] sm:text-xs text-black uppercase leading-tight align-middle">
+                    <td className="border border-black py-1.5 px-3 font-bold text-[11px] sm:text-xs text-black uppercase leading-tight align-middle">
                       {row.mealTextUpper || '\u00A0'}
                     </td>
                   </tr>

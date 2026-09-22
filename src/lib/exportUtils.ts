@@ -239,11 +239,16 @@ export function printMenuDocument(
   if (typeof window === 'undefined') return;
 
   const { title, rows } = getFullMonthRows(monthName, entries, year, month);
+  const totalDays = rows.length || 31;
+  // A4 yüksekliği 297mm. Kenar boşlukları 8mm+8mm = 16mm. Kullanılabilir alan = 281mm.
+  // Başlık + marjinler: ~16mm, Tablo başlığı: ~10mm.
+  // Satırlara kalan tam yükseklik: ~252mm.
+  const rowHeightMm = Math.max(7.2, Math.min(8.6, 252 / totalDays)).toFixed(1);
 
   const rowsHtml = rows
     .map(
       (r) => `
-      <tr>
+      <tr style="height: ${rowHeightMm}mm;">
         <td class="date-col">${r.dateStr}</td>
         <td class="meal-col">${r.mealTextUpper || '&nbsp;'}</td>
       </tr>
@@ -260,7 +265,7 @@ export function printMenuDocument(
         <style>
           @page {
             size: A4 portrait;
-            margin: 8mm 10mm;
+            margin: 8mm 12mm 8mm 12mm;
           }
           * {
             box-sizing: border-box;
@@ -269,18 +274,24 @@ export function printMenuDocument(
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          body {
-            font-family: Arial, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            color: #000 !important;
+          html, body {
+            width: 100%;
+            height: 100%;
             background: #fff !important;
-            padding: 0;
-            margin: 0;
+            color: #000 !important;
+            font-family: Arial, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          }
+          .page-wrapper {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
           }
           .title {
             text-align: center;
-            font-size: 15px;
+            font-size: 19px;
             font-weight: 900;
-            margin-bottom: 8px;
+            margin-bottom: 5mm;
             letter-spacing: 0.5px;
             text-transform: uppercase;
             color: #000 !important;
@@ -288,27 +299,36 @@ export function printMenuDocument(
           table {
             width: 100%;
             border-collapse: collapse;
-            border: 2px solid #000 !important;
+            border: 2.5px solid #000 !important;
+            table-layout: fixed;
+          }
+          thead tr {
+            height: 9.5mm;
+            background-color: #fff !important;
           }
           th {
-            border: 2px solid #000 !important;
-            padding: 5px 6px;
+            border: 2.5px solid #000 !important;
+            padding: 0 8px;
             text-align: center;
             font-weight: 900;
-            font-size: 11px;
+            font-size: 13px;
             text-transform: uppercase;
             color: #000 !important;
             background-color: #fff !important;
+            vertical-align: middle;
+          }
+          tr {
+            page-break-inside: avoid;
           }
           td {
             border: 1.5px solid #000 !important;
-            padding: 2.8px 6px;
-            font-size: 9.5px;
+            padding: 0 8px;
+            font-size: 11px;
             font-weight: bold;
             line-height: 1.25;
             color: #000 !important;
             vertical-align: middle;
-            page-break-inside: avoid;
+            overflow: hidden;
           }
           .date-col {
             width: 30%;
@@ -321,18 +341,20 @@ export function printMenuDocument(
         </style>
       </head>
       <body>
-        <h1 class="title">${title}</h1>
-        <table>
-          <thead>
-            <tr>
-              <th class="date-col">TARİH</th>
-              <th class="meal-col">ÖĞLE YEMEĞİ</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
+        <div class="page-wrapper">
+          <h1 class="title">${title}</h1>
+          <table>
+            <thead>
+              <tr>
+                <th class="date-col">TARİH</th>
+                <th class="meal-col">ÖĞLE YEMEĞİ</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
       </body>
     </html>
   `;
@@ -351,7 +373,6 @@ export function printMenuDocument(
 
   const doc = iframe.contentWindow?.document;
   if (!doc) {
-    // İframe erişilemezse yeni sekmede aç ve yazdır
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(htmlContent);
@@ -384,4 +405,5 @@ export function printMenuDocument(
     }
   }, 250);
 }
+
 
