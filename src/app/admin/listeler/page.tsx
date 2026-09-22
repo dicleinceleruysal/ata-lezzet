@@ -12,12 +12,14 @@ import {
 import { getMealCalories } from '@/lib/mealCalories';
 import PrintMenuModal from '@/components/PrintMenuModal';
 import { exportMonthlyMenuToExcel } from '@/lib/exportUtils';
+import DishSwapPopover from '@/components/DishSwapPopover';
 
 interface MealItem {
   id: string;
   name: string;
   category: string;
   calories?: number | null;
+  imageUrl?: string | null;
 }
 
 interface MonthlyDailyEntry {
@@ -285,6 +287,71 @@ export default function AdminListelerPage() {
   const [pickerCategoryFilter, setPickerCategoryFilter] = useState<string>('all');
   const [newMealCategory, setNewMealCategory] = useState<string>('ana_yemek');
   const [quickAddLoading, setQuickAddLoading] = useState(false);
+
+  // Yemek Bazlı Değiştirme (Arama ve Filtreli Açılır Menü) State
+  const [swapState, setSwapState] = useState<{
+    type: 'monthly' | 'wizard';
+    dayIndex: number;
+    dishIndex: number;
+    dishName: string;
+    anchorRect: DOMRect | null;
+  } | null>(null);
+
+  const handleOpenSwap = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    type: 'monthly' | 'wizard',
+    dayIndex: number,
+    dishIndex: number,
+    dishName: string
+  ) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setSwapState({
+      type,
+      dayIndex,
+      dishIndex,
+      dishName,
+      anchorRect: rect,
+    });
+  };
+
+  const handleSwapDishInDay = (dayIndex: number, dishIndex: number, newDishName: string) => {
+    const updated = [...monthlyEntries];
+    const currentItems = [...(updated[dayIndex].items || parseItems(updated[dayIndex].mealText))];
+    const oldName = currentItems[dishIndex];
+    currentItems[dishIndex] = newDishName.trim();
+    updated[dayIndex].items = currentItems;
+    updated[dayIndex].mealText = currentItems.join(', ');
+    setMonthlyEntries(updated);
+    setFeedback({
+      type: 'success',
+      text: `"${oldName}" başarıyla "${newDishName.trim()}" ile değiştirildi!`,
+    });
+  };
+
+  const handleSwapDishInWizardDay = (dayIndex: number, dishIndex: number, newDishName: string) => {
+    const updated = [...wizardEntries];
+    const currentItems = [...(updated[dayIndex].items || parseItems(updated[dayIndex].mealText))];
+    const oldName = currentItems[dishIndex];
+    currentItems[dishIndex] = newDishName.trim();
+    updated[dayIndex].items = currentItems;
+    updated[dayIndex].mealText = currentItems.join(', ');
+    setWizardEntries(updated);
+    setFeedback({
+      type: 'success',
+      text: `"${oldName}" başarıyla "${newDishName.trim()}" ile değiştirildi!`,
+    });
+  };
+
+  const handleApplySwap = (newDishName: string) => {
+    if (!swapState) return;
+    if (swapState.type === 'monthly') {
+      handleSwapDishInDay(swapState.dayIndex, swapState.dishIndex, newDishName);
+    } else {
+      handleSwapDishInWizardDay(swapState.dayIndex, swapState.dishIndex, newDishName);
+    }
+    setSwapState(null);
+  };
 
   // Onaylanmış aylık planları çek
   const loadApprovedPlans = async () => {
@@ -1018,14 +1085,40 @@ export default function AdminListelerPage() {
                                   return (
                                     <span
                                       key={dIdx}
-                                      className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg border shadow-2xs group ${badgeColor}`}
+                                      className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-lg border shadow-2xs group transition-all ${badgeColor}`}
                                     >
-                                      <span>{dish}</span>
+                                      <span
+                                        onClick={(e) =>
+                                          handleOpenSwap(
+                                            e as unknown as React.MouseEvent<HTMLButtonElement>,
+                                            'monthly',
+                                            index,
+                                            dIdx,
+                                            dish
+                                          )
+                                        }
+                                        className="cursor-pointer hover:underline"
+                                        title="Bu yemeği değiştirmek için tıklayın"
+                                      >
+                                        {dish}
+                                      </span>
                                       <span className="opacity-80 font-black text-[10px]">({cal} kcal)</span>
+
+                                      {/* Arama Kutulu Değiştirme Butonu */}
+                                      <button
+                                        type="button"
+                                        onClick={(e) => handleOpenSwap(e, 'monthly', index, dIdx, dish)}
+                                        className="w-5 h-5 flex items-center justify-center rounded-md text-amber-700/80 hover:text-amber-950 hover:bg-amber-200/60 font-black text-xs transition-colors cursor-pointer"
+                                        title="Bu yemeği başka bir yemekle değiştir (Aramalı Liste)"
+                                      >
+                                        🔄
+                                      </button>
+
+                                      {/* Kaldır Butonu */}
                                       <button
                                         type="button"
                                         onClick={() => handleRemoveDishFromDay(index, dIdx)}
-                                        className="text-stone-400 hover:text-rose-600 font-black text-xs leading-none transition-colors"
+                                        className="w-5 h-5 flex items-center justify-center rounded-md text-stone-400 hover:text-rose-600 hover:bg-rose-100/60 font-black text-xs leading-none transition-colors cursor-pointer"
                                         title="Bu yemeği kaldır"
                                       >
                                         ✕
@@ -1260,14 +1353,40 @@ export default function AdminListelerPage() {
                                     return (
                                       <span
                                         key={dishIdx}
-                                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-2xs ${catColor}`}
+                                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border shadow-2xs group transition-all ${catColor}`}
                                       >
-                                        <span>{dish}</span>
+                                        <span
+                                          onClick={(e) =>
+                                            handleOpenSwap(
+                                              e as unknown as React.MouseEvent<HTMLButtonElement>,
+                                              'wizard',
+                                              dayIdx,
+                                              dishIdx,
+                                              dish
+                                            )
+                                          }
+                                          className="cursor-pointer hover:underline"
+                                          title="Bu yemeği değiştirmek için tıklayın"
+                                        >
+                                          {dish}
+                                        </span>
                                         <span className="opacity-80 font-black text-[10px]">({cal} kcal)</span>
+
+                                        {/* Arama Kutulu Değiştirme Butonu */}
+                                        <button
+                                          type="button"
+                                          onClick={(e) => handleOpenSwap(e, 'wizard', dayIdx, dishIdx, dish)}
+                                          className="w-5 h-5 flex items-center justify-center rounded-md text-amber-700/80 hover:text-amber-950 hover:bg-amber-200/60 font-black text-xs transition-colors cursor-pointer"
+                                          title="Bu yemeği başka bir yemekle değiştir (Aramalı Liste)"
+                                        >
+                                          🔄
+                                        </button>
+
+                                        {/* Çıkar Butonu */}
                                         <button
                                           type="button"
                                           onClick={() => handleRemoveDishFromWizardDay(dayIdx, dishIdx)}
-                                          className="text-stone-400 hover:text-rose-600 font-black ml-0.5 cursor-pointer text-xs"
+                                          className="w-5 h-5 flex items-center justify-center rounded-md text-stone-400 hover:text-rose-600 hover:bg-rose-100/60 font-black text-xs leading-none transition-colors cursor-pointer"
                                           title="Bu yemeği menüden çıkar"
                                         >
                                           ✕
@@ -1599,6 +1718,16 @@ export default function AdminListelerPage() {
         entries={monthlyEntries}
         year={selectedYear}
         month={selectedMonth}
+      />
+
+      {/* Yemek Bazlı Değiştirme (Arama ve Filtreli Açılır Menü) */}
+      <DishSwapPopover
+        isOpen={swapState !== null}
+        anchorRect={swapState?.anchorRect || null}
+        currentDish={swapState?.dishName || ''}
+        availableMeals={availableMeals}
+        onSelect={handleApplySwap}
+        onClose={() => setSwapState(null)}
       />
     </div>
   );
