@@ -1110,133 +1110,242 @@ export default function MenuButtons() {
 
           {/* 6 Günlük Takvim Izgarası (Pazartesi - Cumartesi) */}
           <div className="bg-white rounded-3xl p-4 sm:p-6 border-2 border-amber-200/90 shadow-sm space-y-4">
-            {/* Mobil Görünüm Seçici (Liste vs Tablo) */}
-            <div className="flex md:hidden items-center justify-between gap-2 p-1.5 bg-stone-100/80 rounded-2xl border border-stone-200">
-              <span className="text-xs font-black text-stone-700 px-2">
-                Görünüm:
-              </span>
-              <div className="flex items-center gap-1">
+            {/* Mobil Görünüm Başlığı, Seçici ve Hafta Filtreleri */}
+            <div className="md:hidden space-y-3">
+              {/* Görünüm Geçiş Düğmesi (Segmented Control) */}
+              <div className="flex items-center justify-between gap-2 p-1 bg-stone-100/90 rounded-2xl border border-stone-200/90">
                 <button
                   type="button"
                   onClick={() => setMobileCalendarView('cards')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                     mobileCalendarView === 'cards'
-                      ? 'bg-amber-500 text-white shadow-2xs'
-                      : 'text-stone-600 hover:text-stone-900 bg-white/60'
+                      ? 'bg-white text-stone-900 shadow-xs border border-stone-200/80'
+                      : 'text-stone-500 hover:text-stone-800'
                   }`}
                 >
-                  📋 Hafta Hafta Liste
+                  <span>📋</span>
+                  <span>Modern Liste</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setMobileCalendarView('grid')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  className={`flex-1 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                     mobileCalendarView === 'grid'
-                      ? 'bg-amber-500 text-white shadow-2xs'
-                      : 'text-stone-600 hover:text-stone-900 bg-white/60'
+                      ? 'bg-white text-stone-900 shadow-xs border border-stone-200/80'
+                      : 'text-stone-500 hover:text-stone-800'
                   }`}
                 >
-                  📅 6 Günlük Tablo
+                  <span>📅</span>
+                  <span>6 Günlük Tablo</span>
                 </button>
               </div>
+
+              {/* Hafta Filtreleri (Sadece Liste modunda hızlı gezinme) */}
+              {mobileCalendarView === 'cards' && weekGroups.length > 1 && (
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedWeekFilter('all')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer ${
+                      selectedWeekFilter === 'all'
+                        ? 'bg-stone-900 text-white shadow-xs'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                    }`}
+                  >
+                    Tüm Ay
+                  </button>
+                  {weekGroups.map((wg) => {
+                    const isSelected = selectedWeekFilter === wg.weekNumber;
+                    const hasToday = wg.entries.some((e) => e.id === entries[todayIndex]?.id);
+
+                    return (
+                      <button
+                        key={wg.weekNumber}
+                        type="button"
+                        onClick={() => setSelectedWeekFilter(wg.weekNumber)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-amber-500 text-white shadow-xs'
+                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                        }`}
+                      >
+                        <span>{wg.shortLabel}</span>
+                        {hasToday && (
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              isSelected ? 'bg-white' : 'bg-emerald-500'
+                            }`}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {/* Mobilde Hafta Hafta Liste Görünümü */}
+            {/* Mobilde Modern Hafta Hafta Liste Görünümü (Renk Karmaşası Olmayan Sade Tasarım) */}
             {mobileCalendarView === 'cards' && (
-              <div className="md:hidden space-y-4">
-                {displayedWeekGroups.map((wg) => (
-                  <div key={wg.weekNumber} className="space-y-2.5">
-                    <div className="text-xs font-black text-amber-900 bg-amber-50 border border-amber-200/80 px-3 py-1.5 rounded-xl flex items-center justify-between">
-                      <span>{wg.label}</span>
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-md">
-                        {wg.entries.length} Gün
-                      </span>
-                    </div>
+              <div className="md:hidden space-y-5">
+                {displayedWeekGroups.length === 0 ? (
+                  <div className="py-8 text-center text-stone-400 font-bold text-xs bg-stone-50 rounded-2xl border border-stone-200">
+                    Aramanıza uygun gün bulunamadı.
+                  </div>
+                ) : (
+                  displayedWeekGroups.map((wg) => (
+                    <div key={wg.weekNumber} className="space-y-3">
+                      {/* Hafta Başlık Çizgisi */}
+                      <div className="flex items-center justify-between px-1 pt-1">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-amber-500" />
+                          <span className="text-xs font-black text-stone-800 tracking-tight">
+                            {wg.label}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold text-stone-500 bg-stone-100 px-2 py-0.5 rounded-md">
+                          {wg.entries.length} Gün
+                        </span>
+                      </div>
 
-                    <div className="space-y-2">
-                      {wg.entries.map((entry) => {
-                        const dishes = parseDishes(entry.items, entry.mealText);
-                        const dayCalories = dishes.reduce(
-                          (sum, dish) => sum + getDishCalories(dish),
-                          0
-                        );
-                        const isEntryToday = entry.id === entries[todayIndex]?.id;
+                      {/* Günlük Kartlar */}
+                      <div className="space-y-3">
+                        {wg.entries.map((entry) => {
+                          const dishes = parseDishes(entry.items, entry.mealText);
+                          const dayCalories = dishes.reduce(
+                            (sum, dish) => sum + getDishCalories(dish),
+                            0
+                          );
+                          const isEntryToday = entry.id === entries[todayIndex]?.id;
 
-                        return (
-                          <div
-                            key={entry.id}
-                            onClick={() => handleSelectDayFromMonthly(entry)}
-                            className={`p-3.5 rounded-2xl border transition-all cursor-pointer space-y-2 ${
-                              isEntryToday
-                                ? 'bg-emerald-50/50 border-emerald-400 ring-2 ring-emerald-300 shadow-2xs'
-                                : 'bg-white border-stone-200 hover:border-amber-300 shadow-2xs'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between border-b border-stone-100 pb-1.5">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-black text-stone-900">{entry.dateStr}</span>
-                                {isEntryToday && (
-                                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full bg-emerald-600 text-white animate-pulse">
-                                    Bugün
+                          return (
+                            <div
+                              key={entry.id}
+                              onClick={() => handleSelectDayFromMonthly(entry)}
+                              className={`rounded-2xl border p-3.5 transition-all cursor-pointer space-y-3 group ${
+                                isEntryToday
+                                  ? 'bg-gradient-to-b from-amber-50/50 via-white to-white border-amber-300 ring-2 ring-amber-300/60 shadow-xs'
+                                  : 'bg-white border-stone-200/90 hover:border-amber-300 shadow-2xs'
+                              }`}
+                            >
+                              {/* Kart Üst Bilgisi: Tarih & Kalori Rozeti */}
+                              <div className="flex items-center justify-between gap-2 border-b border-stone-100 pb-2.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-black text-stone-900 group-hover:text-amber-800 transition-colors">
+                                    {entry.dateStr}
+                                  </span>
+                                  <span className="text-[11px] font-bold text-stone-500 bg-stone-100 px-2 py-0.5 rounded-md">
+                                    {entry.dayName}
+                                  </span>
+                                  {isEntryToday && (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                      Bugün
+                                    </span>
+                                  )}
+                                </div>
+                                {dayCalories > 0 && (
+                                  <span className="text-[11px] font-bold text-stone-700 bg-stone-100 px-2 py-0.5 rounded-lg border border-stone-200/60 flex items-center gap-1">
+                                    <span>🔥</span>
+                                    <span>{dayCalories} kcal</span>
                                   </span>
                                 )}
                               </div>
-                              {dayCalories > 0 && (
-                                <span className="text-[10px] font-black text-amber-900 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md">
-                                  🔥 {dayCalories} kcal
-                                </span>
-                              )}
-                            </div>
 
-                            {/* Yemekler */}
-                            <div className="flex flex-wrap gap-1.5">
-                              {dishes.map((dish, dIdx) => {
-                                const cat = getDishCategory(dish);
-                                const meta = CATEGORY_META[cat];
-                                const norm = normalizeFoodText(dish);
-                                const dishImg = getDishImageUrl(dish, cat, dbImagesMap[norm]);
+                              {/* Modern Yemek Listesi: Nötr, Şık ve Görselli (Renk Karmaşası Yok!) */}
+                              <div className="space-y-1.5">
+                                {dishes.map((dish, dIdx) => {
+                                  const cat = getDishCategory(dish);
+                                  const meta = CATEGORY_META[cat];
+                                  const norm = normalizeFoodText(dish);
+                                  const dishImg = getDishImageUrl(dish, cat, dbImagesMap[norm]);
+                                  const cal = getDishCalories(dish);
 
-                                return (
-                                  <span
-                                    key={dIdx}
-                                    className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-lg border shadow-2xs ${meta.badgeClass}`}
-                                  >
-                                    <span>{dish}</span>
-                                    {dishImg && (
-                                      <button
-                                        type="button"
+                                  return (
+                                    <div
+                                      key={dIdx}
+                                      className="flex items-center gap-3 p-2 rounded-xl bg-stone-50/70 hover:bg-amber-50/40 border border-stone-150/60 transition-colors"
+                                    >
+                                      {/* Fotoğraf veya Kategori İkonu */}
+                                      <div
                                         onClick={(e) => {
-                                          e.stopPropagation();
-                                          setSelectedFoodModal({
-                                            name: dish,
-                                            category: cat,
-                                            calories: getDishCalories(dish),
-                                            imageUrl: dishImg,
-                                          });
+                                          if (dishImg) {
+                                            e.stopPropagation();
+                                            setSelectedFoodModal({
+                                              name: dish,
+                                              category: cat,
+                                              calories: cal,
+                                              imageUrl: dishImg,
+                                            });
+                                          }
                                         }}
-                                        className="inline-flex items-center justify-center w-4 h-4 rounded bg-amber-500 text-white text-[9px] font-bold"
-                                        title="Görseli Büyüt"
+                                        className={`relative w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border border-stone-200/70 bg-white flex items-center justify-center ${
+                                          dishImg ? 'cursor-pointer group/photo' : ''
+                                        }`}
+                                        title={dishImg ? 'Fotoğrafı büyütmek için dokunun' : undefined}
                                       >
-                                        📷
-                                      </button>
-                                    )}
-                                  </span>
-                                );
-                              })}
-                            </div>
+                                        {dishImg ? (
+                                          <>
+                                            <img
+                                              src={dishImg}
+                                              alt={dish}
+                                              className="w-full h-full object-cover group-hover/photo:scale-105 transition-transform"
+                                              loading="lazy"
+                                            />
+                                            <div className="absolute inset-0 bg-black/25 opacity-0 group-hover/photo:opacity-100 transition-opacity flex items-center justify-center text-white text-[9px] font-black">
+                                              🔍
+                                            </div>
+                                          </>
+                                        ) : (
+                                          <span className="text-base select-none">
+                                            {cat === 'corba' ? '🍲' : cat === 'ana_yemek' ? '🥩' : cat === 'yan_yemek' ? '🍚' : cat === 'salata' ? '🥗' : cat === 'tatli' ? '🍮' : '🥤'}
+                                          </span>
+                                        )}
+                                      </div>
 
-                            <div className="flex justify-end pt-1">
-                              <span className="text-[11px] font-black text-amber-700 flex items-center gap-0.5">
-                                <span>Detaylı Menüyü İncele</span>
-                                <span>&rarr;</span>
-                              </span>
+                                      {/* Yemek Başlığı & Sade Kategori/Kalori */}
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-1.5">
+                                          <span className="font-extrabold text-stone-900 text-xs sm:text-sm truncate">
+                                            {dish}
+                                          </span>
+                                          {cal > 0 && (
+                                            <span className="text-[10px] font-semibold text-stone-400 whitespace-nowrap">
+                                              {cal} kcal
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-stone-500 font-medium">
+                                          <span>{meta?.label || 'Yemek'}</span>
+                                          {dishImg && (
+                                            <>
+                                              <span className="text-stone-300">•</span>
+                                              <span className="text-amber-600 font-bold flex items-center gap-0.5">
+                                                <CameraIcon className="w-2.5 h-2.5" />
+                                                <span>Fotoğraflı</span>
+                                              </span>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Kart Altı: Günün Menüsüne Geçiş */}
+                              <div className="flex items-center justify-between pt-1 text-xs font-black text-amber-700 border-t border-stone-100/80">
+                                <span className="text-[11px] text-stone-400 font-medium">Günün Menüsü Görünümüne Geç</span>
+                                <span className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                  <span>İncele</span>
+                                  <span>&rarr;</span>
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             )}
 

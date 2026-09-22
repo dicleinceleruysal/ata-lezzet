@@ -11,9 +11,19 @@ interface VersionItem {
 
 const VERSION_HISTORY: VersionItem[] = [
   {
-    version: 'v1.4.1',
+    version: 'v1.4.2',
     date: '22 Eylül 2026',
     isCurrent: true,
+    changes: [
+      'Aylık Menü Mobil Görünüm Modernizasyonu: Mobildeki kafa karıştırıcı ve karmaşık çok renkli rozet karmaşası kaldırıldı; her gün için yemekler porsiyon kalori bilgileri, küçük görsel önizlemeleri ve nötr kurumsal tipografiyle yapılandırılmış şık kartlara dönüştürüldü.',
+      'Hızlı Hafta Gezinme Çubuğu: Mobilde kullanıcıların uzun listelerde kaybolmaması için "Tüm Ay" ve haftalar arasında (1. Hafta, 2. Hafta...) tek dokunuşla geçiş sağlayan yatay hafta seçici eklendi.',
+      'Modern Segmented Control: Liste ve 6 Günlük Tablo arasında akıcı geçiş sağlayan iOS tarzı ikili kontrol düğmesi geliştirildi.',
+      'Doğrudan Fotoğraf İnceleme & Gün Detayı: Kart içindeki yemeklerin fotoğraflarına dokunulduğunda doğrudan büyütme penceresi açılır; karta dokunulduğunda o günün detaylı görünümüne yumuşak geçiş yapılır.',
+    ],
+  },
+  {
+    version: 'v1.4.1',
+    date: '22 Eylül 2026',
     changes: [
       'Kullanıcı Tarafından Eklenen Yemek & Görsellerin Senkronizasyonu: Yönetici panelinden manuel eklenen tüm yeni yemek kayıtları ve görseller (Ayran, Menemen, Meyve, Profiterol, Puding, Supangle, Sütlaç, Tiramisu vb.) public/dishes/ arşivine ve ensureSeed.ts veritabanı tohumlama sistemine işlendi.',
       'Görsel Depolama ve Veritabanı Optimizasyonu: Base64 formatında veritabanını şişiren görseller gerçek JPEG dosyalarına dönüştürüldü; SQLite veritabanı optimize edilerek Vercel CDN ve GitHub üzerinde kalıcılığı sağlandı.',
@@ -140,7 +150,7 @@ export default function Footer() {
 
           {/* 4. SÜRÜM BİLGİSİ & TIKLANABİLİR SÜRÜM GEÇMİŞİ */}
           <div className="pt-4 flex items-center justify-center gap-2 text-xs text-stone-400 font-medium">
-            <span className="text-stone-400 tracking-wide">Ata Lezzet v1.4.1</span>
+            <span className="text-stone-400 tracking-wide">Ata Lezzet v1.4.2</span>
             <span className="text-stone-300">|</span>
             <button
               type="button"

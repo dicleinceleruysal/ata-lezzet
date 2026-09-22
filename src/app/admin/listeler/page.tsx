@@ -75,12 +75,12 @@ const CATEGORY_NAMES: Record<string, string> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  corba: 'bg-amber-100 text-amber-900 border-amber-300',
-  ana_yemek: 'bg-rose-100 text-rose-950 border-rose-300',
-  yan_yemek: 'bg-orange-100 text-orange-950 border-orange-300',
-  salata: 'bg-emerald-100 text-emerald-950 border-emerald-300',
-  tatli: 'bg-purple-100 text-purple-950 border-purple-300',
-  icecek: 'bg-sky-100 text-sky-950 border-sky-300',
+  corba: 'bg-stone-50 text-stone-800 border-stone-200 hover:border-amber-300',
+  ana_yemek: 'bg-stone-50 text-stone-800 border-stone-200 hover:border-amber-300',
+  yan_yemek: 'bg-stone-50 text-stone-800 border-stone-200 hover:border-amber-300',
+  salata: 'bg-stone-50 text-stone-800 border-stone-200 hover:border-amber-300',
+  tatli: 'bg-stone-50 text-stone-800 border-stone-200 hover:border-amber-300',
+  icecek: 'bg-stone-50 text-stone-800 border-stone-200 hover:border-amber-300',
 };
 
 function normalizeFoodText(str: string): string {
