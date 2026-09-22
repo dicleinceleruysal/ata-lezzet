@@ -13,7 +13,7 @@ interface MealItem {
   createdAt: string;
 }
 
-const ITEMS_PER_PAGE = 25;
+const ITEMS_PER_PAGE = 20;
 
 const CATEGORY_NAMES: Record<string, string> = {
   corba: 'Çorba',
