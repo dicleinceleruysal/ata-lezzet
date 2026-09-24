@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { getMealCalories } from '@/lib/mealCalories';
-import { getDishImageUrl } from '@/lib/dishVisuals';
+import { getDishImageUrl, normalizeVisualName } from '@/lib/dishVisuals';
 
 interface MealItem {
   id: string;
@@ -205,8 +205,11 @@ export default function AdminYemeklerPage() {
       if (!res.ok) throw new Error('Yemek eklenemedi.');
 
       setFeedback({ type: 'success', text: `"${formData.name}" (${cal} kcal) görseliyle birlikte başarıyla eklendi!` });
+      const addedName = formData.name.trim();
       setFormData({ name: '', category: 'corba', calories: '', imageUrl: '' });
       setFormOpen(false);
+      setSearchQuery(addedName);
+      setCurrentPage(1);
       fetchMeals();
     } catch (err: unknown) {
       setFeedback({ type: 'error', text: err instanceof Error ? err.message : 'Hata oluştu.' });
@@ -308,11 +311,10 @@ export default function AdminYemeklerPage() {
 
   const filteredMeals = meals.filter((m) => {
     if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      m.name.toLowerCase().includes(q) ||
-      (CATEGORY_NAMES[m.category] || m.category).toLowerCase().includes(q)
-    );
+    const q = normalizeVisualName(searchQuery);
+    const mName = normalizeVisualName(m.name);
+    const mCat = normalizeVisualName(CATEGORY_NAMES[m.category] || m.category);
+    return mName.includes(q) || mCat.includes(q);
   });
 
   // Sayfalama (Pagination)

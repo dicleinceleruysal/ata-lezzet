@@ -1676,28 +1676,12 @@ export async function ensureDatabaseSeeded(client?: any) {
       }
       console.log('Tüm yemekler başarıyla aktarıldı.');
     } else {
-      // Mevcut yemekleri ve görselleri güncelle, yeni eklenen yemekleri aktar
+      // Yalnızca veritabanında henüz bulunmayan ilk başlangıç yemeklerini ekle (Kullanıcının mevcut verilerini ve fotoğraflarını ASLA ezme!)
       for (const meal of INITIAL_MEALS) {
         const existing = await db.meal.findFirst({
           where: { name: meal.name },
         });
-        if (existing) {
-          const needsUpdate =
-            (meal.imageUrl && existing.imageUrl !== meal.imageUrl) ||
-            (meal.calories && existing.calories !== meal.calories) ||
-            (meal.category && existing.category !== meal.category);
-
-          if (needsUpdate) {
-            await db.meal.update({
-              where: { id: existing.id },
-              data: {
-                imageUrl: meal.imageUrl ?? existing.imageUrl,
-                calories: meal.calories ?? existing.calories,
-                category: meal.category ?? existing.category,
-              },
-            });
-          }
-        } else {
+        if (!existing) {
           await db.meal.create({
             data: {
               name: meal.name,

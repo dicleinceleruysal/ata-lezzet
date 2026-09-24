@@ -497,6 +497,13 @@ export async function saveMonthlyPlan(data: {
     where: { monthlyPlanId: monthlyPlan.id },
   });
 
+  // Mevcut tüm aktif yemeklerin normalize isim kümesini hafızaya al
+  const allDbMeals = await prisma.meal.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true },
+  });
+  const existingNormSet = new Set(allDbMeals.map((m) => normalizeDishName(m.name)));
+
   // 4. Yeni günleri ekle
   for (const entry of validEntries) {
     const dayLower = (entry.dayName || '').toLowerCase().trim();
@@ -505,8 +512,13 @@ export async function saveMonthlyPlan(data: {
     // Gün numarasını bul (varsa entry.dayNumber, yoksa dateStr'den çek)
     let dayNum = entry.dayNumber;
     if (!dayNum && entry.dateStr) {
-      const match = entry.dateStr.match(/\d+/);
-      if (match) dayNum = parseInt(match[0], 10);
+      const dayMatch = entry.dateStr.trim().match(/^(\d{1,2})\b/);
+      if (dayMatch) {
+        dayNum = parseInt(dayMatch[1], 10);
+      } else {
+        const match = entry.dateStr.match(/\b([1-9]|[12]\d|3[01])\b/);
+        if (match) dayNum = parseInt(match[0], 10);
+      }
     }
     if (!dayNum) dayNum = 1;
 
@@ -519,24 +531,23 @@ export async function saveMonthlyPlan(data: {
       .map((item) => item.trim())
       .filter(Boolean);
 
-    // Her yemeğin Meal tablosunda da var olduğundan emin ol
+    // Her yemeğin Meal tablosunda da var olduğundan emin ol (Kullanıcı verilerini ve fotoğraflarını bozmadan)
     for (const itemName of itemsArray) {
       const trimmed = itemName.trim();
       if (!trimmed) continue;
-      const category = autoDetectMealCategory(trimmed);
+      const normItem = normalizeDishName(trimmed);
 
-      const exists = await prisma.meal.findFirst({
-        where: { name: trimmed }
-      });
-      if (!exists) {
+      if (!existingNormSet.has(normItem)) {
+        const category = autoDetectMealCategory(trimmed);
         await prisma.meal.create({
           data: {
-            name: trimmed,
+            name: trimmed.toLocaleUpperCase('tr-TR'),
             category,
             calories: getMealCalories(trimmed, category),
             isActive: true,
-          }
+          },
         });
+        existingNormSet.add(normItem);
       }
     }
 
