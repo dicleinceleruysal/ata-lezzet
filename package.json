@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate",
-    "postbuild": "node -e \"const fs = require('fs'); fs.mkdirSync('.next/server/prisma', { recursive: true }); if (fs.existsSync('prisma/dev.db')) fs.copyFileSync('prisma/dev.db', '.next/server/prisma/dev.db'); console.log('[Build] Successfully bundled prisma/dev.db into .next/server/prisma/dev.db');\""
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

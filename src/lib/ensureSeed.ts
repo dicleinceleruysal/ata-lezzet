@@ -1655,81 +1655,12 @@ export const INITIAL_MONTHLY_PLANS = [
 
 let hasSeeded = false;
 
-async function createTablesIfNotExist(db: any) {
-  try {
-    await db.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "Meal" (
-        "id" TEXT PRIMARY KEY NOT NULL,
-        "name" TEXT NOT NULL,
-        "category" TEXT NOT NULL,
-        "description" TEXT,
-        "calories" INTEGER,
-        "imageUrl" TEXT,
-        "isActive" BOOLEAN NOT NULL DEFAULT 1,
-        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    await db.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "MonthlyPlan" (
-        "id" TEXT PRIMARY KEY NOT NULL,
-        "year" INTEGER NOT NULL,
-        "month" INTEGER NOT NULL,
-        "monthName" TEXT NOT NULL,
-        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-    await db.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "MonthlyPlan_year_month_key" ON "MonthlyPlan"("year", "month");`);
-
-    await db.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "DailyMenuEntry" (
-        "id" TEXT PRIMARY KEY NOT NULL,
-        "monthlyPlanId" TEXT NOT NULL,
-        "date" DATETIME NOT NULL,
-        "dateStr" TEXT NOT NULL,
-        "dayName" TEXT NOT NULL,
-        "mealText" TEXT NOT NULL,
-        "items" TEXT NOT NULL,
-        "isHoliday" BOOLEAN NOT NULL DEFAULT 0,
-        FOREIGN KEY ("monthlyPlanId") REFERENCES "MonthlyPlan"("id") ON DELETE CASCADE ON UPDATE CASCADE
-      );
-    `);
-    await db.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "DailyMenuEntry_monthlyPlanId_date_key" ON "DailyMenuEntry"("monthlyPlanId", "date");`);
-
-    await db.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "MenuRating" (
-        "id" TEXT PRIMARY KEY NOT NULL,
-        "dateStr" TEXT NOT NULL,
-        "score" INTEGER NOT NULL,
-        "userId" TEXT,
-        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-    await db.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "MenuRating_dateStr_idx" ON "MenuRating"("dateStr");`);
-    await db.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "MenuRating_userId_idx" ON "MenuRating"("userId");`);
-
-    await db.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS "UserNote" (
-        "id" TEXT PRIMARY KEY NOT NULL,
-        "content" TEXT NOT NULL,
-        "status" TEXT NOT NULL DEFAULT 'pending',
-        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-  } catch (err) {
-    // Tablolar mevcutsa veya SQLite dışı bir ortamdaysa sessiz kal
-  }
-}
-
 export async function ensureDatabaseSeeded(client?: any) {
   if (hasSeeded) return;
 
   const db = client || prisma;
 
   try {
-    await createTablesIfNotExist(db);
     const mealCount = await db.meal.count();
     if (mealCount === 0) {
       console.log('Veritabanı boş, 157 yemek aktarılıyor...');
