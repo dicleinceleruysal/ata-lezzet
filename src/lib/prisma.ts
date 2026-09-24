@@ -7,6 +7,18 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(): PrismaClient {
+  // 1. Eğer harici bir bulut veritabanı (Vercel Postgres, Supabase, Neon vb.) tanımlanmışsa doğrudan onu kullan
+  if (process.env.DATABASE_URL) {
+    return new PrismaClient({
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL,
+        },
+      },
+      log: ['error'],
+    });
+  }
+
   const isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
   if (isServerless) {
@@ -17,7 +29,10 @@ function createPrismaClient(): PrismaClient {
         path.join(process.cwd(), 'prisma', 'dev.db'),
         path.resolve('./prisma/dev.db'),
         path.join('/var/task', 'prisma', 'dev.db'),
+        path.join('/var/task', '.next', 'server', 'prisma', 'dev.db'),
         path.join(process.cwd(), '.next', 'server', 'prisma', 'dev.db'),
+        path.resolve(__dirname, '..', '..', '..', 'prisma', 'dev.db'),
+        path.resolve(__dirname, '..', '..', 'prisma', 'dev.db'),
       ];
 
       for (const cand of candidates) {
