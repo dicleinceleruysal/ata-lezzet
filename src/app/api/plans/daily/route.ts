@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getOrCreateDailyPlan, updateDailyPlanMeals, getTodayLunchMenu } from '@/services/mealService';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const todayLunch = await getTodayLunchMenu();

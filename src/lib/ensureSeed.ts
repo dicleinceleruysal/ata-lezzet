@@ -1676,16 +1676,25 @@ export async function ensureDatabaseSeeded(client?: any) {
       }
       console.log('Tüm yemekler başarıyla aktarıldı.');
     } else {
-      // Mevcut yemekleri ve görselleri güncelle
+      // Mevcut yemekleri ve görselleri güncelle, yeni eklenen yemekleri aktar
       for (const meal of INITIAL_MEALS) {
         const existing = await db.meal.findFirst({
           where: { name: meal.name },
         });
         if (existing) {
-          if (meal.imageUrl && existing.imageUrl !== meal.imageUrl) {
+          const needsUpdate =
+            (meal.imageUrl && existing.imageUrl !== meal.imageUrl) ||
+            (meal.calories && existing.calories !== meal.calories) ||
+            (meal.category && existing.category !== meal.category);
+
+          if (needsUpdate) {
             await db.meal.update({
               where: { id: existing.id },
-              data: { imageUrl: meal.imageUrl, calories: meal.calories ?? existing.calories },
+              data: {
+                imageUrl: meal.imageUrl ?? existing.imageUrl,
+                calories: meal.calories ?? existing.calories,
+                category: meal.category ?? existing.category,
+              },
             });
           }
         } else {
@@ -1701,10 +1710,13 @@ export async function ensureDatabaseSeeded(client?: any) {
       }
     }
 
-    const planCount = await db.monthlyPlan.count();
-    if (planCount === 0 && INITIAL_MONTHLY_PLANS.length > 0) {
-      console.log('Aylık planlar veritabanına aktarılıyor...');
-      for (const plan of INITIAL_MONTHLY_PLANS) {
+    // Kodda tanımlı olup veritabanında henüz bulunmayan aylık planları aktar
+    for (const plan of INITIAL_MONTHLY_PLANS) {
+      const existingPlan = await db.monthlyPlan.findUnique({
+        where: { year_month: { year: plan.year, month: plan.month } },
+      });
+
+      if (!existingPlan) {
         await db.monthlyPlan.create({
           data: {
             year: plan.year,
@@ -1722,8 +1734,8 @@ export async function ensureDatabaseSeeded(client?: any) {
             },
           },
         });
+        console.log(`[Seed] ${plan.monthName} planı veritabanına eklendi.`);
       }
-      console.log('Aylık planlar başarıyla aktarıldı.');
     }
 
     hasSeeded = true;

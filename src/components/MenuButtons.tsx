@@ -377,7 +377,7 @@ export default function MenuButtons() {
 
   // Veritabanı yemek, kalori ve görsel haritasını çek
   useEffect(() => {
-    fetch('/api/meals')
+    fetch('/api/meals', { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -418,7 +418,7 @@ export default function MenuButtons() {
     setLoading(true);
     setError(null);
 
-    fetch('/api/plans/monthly')
+    fetch('/api/plans/monthly', { cache: 'no-store' })
       .then(async (res) => {
         if (!res.ok) throw new Error('Aylık yemek listesi yüklenemedi.');
         return res.json();

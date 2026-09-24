@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { getMealCalories } from '@/lib/mealCalories';
 import { ensureDatabaseSeeded } from '@/lib/ensureSeed';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     await ensureDatabaseSeeded(prisma);

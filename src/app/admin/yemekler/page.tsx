@@ -116,7 +116,7 @@ export default function AdminYemeklerPage() {
   const fetchMeals = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/meals');
+      const res = await fetch('/api/meals', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setMeals(data);
