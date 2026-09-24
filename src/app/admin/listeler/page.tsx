@@ -15,7 +15,7 @@ import { exportMonthlyMenuToExcel } from '@/lib/exportUtils';
 import DishSwapPopover from '@/components/DishSwapPopover';
 
 interface MealItem {
-  id: string;
+  id?: string;
   name: string;
   category: string;
   calories?: number | null;
@@ -299,6 +299,33 @@ export default function AdminListelerPage() {
     anchorRect: DOMRect | null;
   } | null>(null);
 
+  // Veritabanındaki en güncel yemek listesini getir
+  const refreshAvailableMeals = async () => {
+    try {
+      const res = await fetch('/api/meals', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableMeals(data);
+      }
+    } catch {
+      // Hata durumunda sessiz kal
+    }
+  };
+
+  const handleMealCreated = (newMeal: MealItem) => {
+    setAvailableMeals((prev) => {
+      const exists = prev.some(
+        (m) => m.id === newMeal.id || m.name.toLowerCase() === newMeal.name.toLowerCase()
+      );
+      if (exists) return prev;
+      return [newMeal, ...prev];
+    });
+    setFeedback({
+      type: 'success',
+      text: `"${newMeal.name}" veritabanına başarıyla eklendi!`,
+    });
+  };
+
   const handleOpenSwap = (
     e: React.MouseEvent<HTMLButtonElement>,
     type: 'monthly' | 'wizard',
@@ -316,6 +343,7 @@ export default function AdminListelerPage() {
       dishName,
       anchorRect: rect,
     });
+    refreshAvailableMeals();
   };
 
   const handleOpenAdd = (
@@ -333,6 +361,7 @@ export default function AdminListelerPage() {
       title,
       anchorRect: rect,
     });
+    refreshAvailableMeals();
   };
 
   const handleSwapDishInDay = (dayIndex: number, dishIndex: number, newDishName: string) => {
@@ -386,7 +415,7 @@ export default function AdminListelerPage() {
   // Onaylanmış aylık planları çek
   const loadApprovedPlans = async () => {
     try {
-      const res = await fetch('/api/plans/monthly?summary=true');
+      const res = await fetch('/api/plans/monthly?summary=true', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setApprovedPlans(data);
@@ -402,8 +431,8 @@ export default function AdminListelerPage() {
     setFeedback(null);
     try {
       const [planRes, mealsRes] = await Promise.all([
-        fetch(`/api/plans/monthly?year=${year}&month=${month}`),
-        fetch('/api/meals'),
+        fetch(`/api/plans/monthly?year=${year}&month=${month}`, { cache: 'no-store' }),
+        fetch('/api/meals', { cache: 'no-store' }),
       ]);
 
       if (mealsRes.ok) {
@@ -2035,6 +2064,7 @@ export default function AdminListelerPage() {
             availableMeals={availableMeals}
             onSelect={handleApplySelection}
             onClose={() => setSwapState(null)}
+            onMealCreated={handleMealCreated}
           />
         );
       })()}

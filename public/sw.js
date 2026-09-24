@@ -1,5 +1,5 @@
 // Ata Lezzet PWA Service Worker
-const CACHE_NAME = 'ata-lezzet-v1.6.0';
+const CACHE_NAME = 'ata-lezzet-v1.6.1';
 
 const PRECACHE_ASSETS = [
   '/',
