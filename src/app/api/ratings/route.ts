@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { isDateInFuture } from '@/lib/dateUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -193,6 +194,15 @@ export async function POST(request: Request) {
 
     const cleanUserId = userId.trim();
     const cleanDateStr = dateStr.trim();
+
+    // Gelecekteki menülere oy vermeyi engelle
+    if (isDateInFuture(null, cleanDateStr)) {
+      return NextResponse.json(
+        { success: false, error: 'Gelecek tarihteki menülere henüz oy verilemez. Sadece bugüne ve geçmişe oy verilebilir.' },
+        { status: 400 }
+      );
+    }
+
     const roundedScore = Math.round(numericScore);
 
     // 1 KULLANICI = 1 OY KESİN KURALI:

@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 interface DishStarRatingProps {
   dishName: string;
   dateStr?: string;
+  isFuture?: boolean;
   initialAverage?: number;
   initialCount?: number;
   initialUserScore?: number | null;
@@ -15,6 +16,7 @@ interface DishStarRatingProps {
 export default function DishStarRating({
   dishName,
   dateStr,
+  isFuture = false,
   initialAverage = 0,
   initialCount = 0,
   initialUserScore = null,
@@ -48,7 +50,7 @@ export default function DishStarRating({
 
   const handleRate = async (star: number, e: React.MouseEvent) => {
     e.stopPropagation(); // Kart tıklaması (modal açma) ile çakışmasın
-    if (isSubmitting) return;
+    if (isSubmitting || isFuture) return;
 
     const previousUserScore = userScore;
     const previousAverage = average;
@@ -114,12 +116,20 @@ export default function DishStarRating({
               <button
                 key={star}
                 type="button"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isFuture}
                 onClick={(e) => handleRate(star, e)}
-                onMouseEnter={() => setHoverScore(star)}
-                onMouseLeave={() => setHoverScore(null)}
-                title={`${dishName} için ${star} Yıldız Ver`}
-                className={`p-1 rounded-md transition-transform hover:scale-125 active:scale-95 cursor-pointer disabled:cursor-wait ${
+                onMouseEnter={() => !isFuture && setHoverScore(star)}
+                onMouseLeave={() => !isFuture && setHoverScore(null)}
+                title={
+                  isFuture
+                    ? 'Gelecekteki yemekler günü geldiğinde puanlanabilir'
+                    : `${dishName} için ${star} Yıldız Ver`
+                }
+                className={`p-1 rounded-md transition-transform ${
+                  isFuture
+                    ? 'cursor-not-allowed opacity-65'
+                    : 'hover:scale-125 active:scale-95 cursor-pointer disabled:cursor-wait'
+                } ${
                   isFilled
                     ? 'text-amber-400 drop-shadow-[0_1px_2px_rgba(245,158,11,0.4)]'
                     : 'text-stone-300 hover:text-amber-200'
@@ -143,17 +153,22 @@ export default function DishStarRating({
               ⭐ {average.toFixed(1)}{' '}
               <span className="text-[10px] text-stone-500 font-medium">({count})</span>
             </span>
-          ) : (
+          ) : !isFuture ? (
             <span className="text-[10px] text-stone-400 font-semibold italic">
               İlk puanı ver
             </span>
-          )}
+          ) : null}
 
-          {userScore !== null && (
+          {isFuture ? (
+            <span className="text-[10px] text-stone-400 font-semibold italic flex items-center gap-0.5">
+              <span>🔒</span>
+              <span>Gününde oylanır</span>
+            </span>
+          ) : userScore !== null ? (
             <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1 py-0.5 rounded-md">
               Oyunuz: {userScore}★
             </span>
-          )}
+          ) : null}
         </div>
       </div>
 

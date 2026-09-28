@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 interface DailyMenuRatingProps {
   dateStr: string;
   isToday?: boolean;
+  isFuture?: boolean;
 }
 
 // Güvenli ve kalıcı tekil kullanıcı kimliği üretici
@@ -29,7 +30,11 @@ function getClientVoterId(): string {
   }
 }
 
-export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuRatingProps) {
+export default function DailyMenuRating({
+  dateStr,
+  isToday = false,
+  isFuture = false,
+}: DailyMenuRatingProps) {
   const [average, setAverage] = useState<number>(0);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [userRating, setUserRating] = useState<number | null>(null);
@@ -90,8 +95,8 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
 
   // Puan verme işlemi (1 KULLANICI = 1 OY KESİN KURALI)
   const handleRate = async (score: number) => {
-    // Kullanıcı zaten oy verdiyse veya işlem devam ediyorsa tekrar oy verilemez!
-    if (isSubmitting || hasVoted || !dateStr) return;
+    // Kullanıcı zaten oy verdiyse, işlem devam ediyorsa veya gün gelecekteyse oy verilemez!
+    if (isSubmitting || hasVoted || isFuture || !dateStr) return;
 
     const voterId = getClientVoterId();
     setIsSubmitting(true);
@@ -162,10 +167,14 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
         <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
           <span className="text-xl">⭐</span>
           <h3 className="text-sm sm:text-base font-black text-stone-900 tracking-tight flex items-center gap-2">
-            {isToday ? 'Bugünün Menüsüne Not Verin' : 'Menüye Not Verin'}
+            {isToday ? 'Bugünün Menüsüne Not Verin' : isFuture ? 'Menü Değerlendirmesi' : 'Menüye Not Verin'}
             {isToday ? (
               <span className="text-[10px] uppercase font-extrabold bg-emerald-600 text-white px-2 py-0.5 rounded-md shadow-2xs">
                 Bugün
+              </span>
+            ) : isFuture ? (
+              <span className="text-[10px] font-bold bg-stone-200 text-stone-700 px-2 py-0.5 rounded-md flex items-center gap-1">
+                <span>🔒</span> Gelecek Gün
               </span>
             ) : (
               <span className="text-[10px] font-bold bg-amber-200/70 text-amber-900 px-2 py-0.5 rounded-md">
@@ -176,7 +185,12 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
         </div>
 
         <div className="text-xs text-stone-500 font-medium mt-1">
-          {totalCount > 0 ? (
+          {isFuture ? (
+            <p className="text-stone-500 font-medium flex items-center gap-1.5">
+              <span>🔒</span>
+              <span>Bu menü henüz servis edilmedi. Günü geldiğinde puanlama açılacaktır.</span>
+            </p>
+          ) : totalCount > 0 ? (
             <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
               <span className="font-extrabold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-lg border border-amber-200 text-xs">
                 ★ {average.toFixed(1)} / 5.0
@@ -200,23 +214,25 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
           {[1, 2, 3, 4, 5].map((star) => {
             const isFilled = star <= activeStarCount;
             const isUserChoice = star === userRating;
-            const isDisabled = isSubmitting || hasVoted;
+            const isDisabled = isSubmitting || hasVoted || isFuture;
 
             return (
               <button
                 key={star}
                 type="button"
                 onClick={() => handleRate(star)}
-                onMouseEnter={() => !hasVoted && setHoverRating(star)}
-                onMouseLeave={() => !hasVoted && setHoverRating(null)}
+                onMouseEnter={() => !hasVoted && !isFuture && setHoverRating(star)}
+                onMouseLeave={() => !hasVoted && !isFuture && setHoverRating(null)}
                 disabled={isDisabled}
                 className={`p-1 text-2xl sm:text-3xl transition-transform select-none focus:outline-none relative group ${
                   isDisabled
-                    ? 'cursor-default opacity-95'
+                    ? isFuture ? 'cursor-not-allowed opacity-60' : 'cursor-default opacity-95'
                     : 'cursor-pointer hover:scale-125 active:scale-95'
                 }`}
                 title={
-                  hasVoted
+                  isFuture
+                    ? 'Gelecek menüler günü geldiğinde puanlanabilir'
+                    : hasVoted
                     ? `Verdiğiniz Not: ${userRating} Yıldız (Oyunuz kaydedildi)`
                     : `${star} Yıldız - ${getScoreLabel(star)}`
                 }
@@ -246,7 +262,11 @@ export default function DailyMenuRating({ dateStr, isToday = false }: DailyMenuR
 
         {/* Durum / Rehber Bildirim Satırı */}
         <div className="min-h-[18px] text-[11px] font-bold text-center sm:text-right flex items-center justify-center sm:justify-end gap-1">
-          {feedbackText ? (
+          {isFuture ? (
+            <span className="text-stone-400 italic">
+              Günü geldiğinde oylanabilir
+            </span>
+          ) : feedbackText ? (
             <span className="text-emerald-700 animate-in fade-in flex items-center gap-1 font-extrabold bg-emerald-100/70 px-2 py-0.5 rounded-md">
               ✓ {feedbackText}
             </span>

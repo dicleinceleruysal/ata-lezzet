@@ -15,6 +15,7 @@ import DailyMenuRating from './DailyMenuRating';
 import DishStarRating from './DishStarRating';
 import PrintMenuModal from './PrintMenuModal';
 import { exportMonthlyMenuToExcel } from '@/lib/exportUtils';
+import { isDateInFuture } from '@/lib/dateUtils';
 
 export interface DailyMenuEntryData {
   id: string;
@@ -497,6 +498,12 @@ export default function MenuButtons() {
 
   const entries = monthlyPlan?.entries || [];
   const currentEntry = entries[currentIndex] || null;
+
+  // Günün menüsünün gelecekte olup olmadığını kontrol et (sadece o güne ve geçmişe oy verilebilir)
+  const isCurrentEntryFuture = useMemo(() => {
+    if (!currentEntry) return false;
+    return isDateInFuture(currentEntry.date, currentEntry.dateStr);
+  }, [currentEntry]);
 
   // Günün menüsündeki yemeklerin puanlarını çek
   useEffect(() => {
@@ -1085,6 +1092,7 @@ export default function MenuButtons() {
                                   initialAverage={dishRatingsMap[dish]?.average || 0}
                                   initialCount={dishRatingsMap[dish]?.count || 0}
                                   initialUserScore={dishRatingsMap[dish]?.userScore ?? null}
+                                  isFuture={isCurrentEntryFuture}
                                   onRatingUpdated={(name, avg, count, userScore) => {
                                     setDishRatingsMap((prev) => ({
                                       ...prev,
@@ -1110,10 +1118,11 @@ export default function MenuButtons() {
                       </div>
                     </div>
 
-                    {/* Günün Menüsünü 5 Yıldız ile Puanlama (Sadece Bugün) */}
+                    {/* Günün Menüsünü 5 Yıldız ile Puanlama (Sadece Bugün ve Geçmiş) */}
                     <DailyMenuRating
                       dateStr={currentEntry.dateStr}
                       isToday={currentIndex === todayIndex}
+                      isFuture={isCurrentEntryFuture}
                     />
                   </>
                 );
@@ -1711,6 +1720,7 @@ export default function MenuButtons() {
                   initialAverage={dishRatingsMap[selectedFoodModal.name]?.average || 0}
                   initialCount={dishRatingsMap[selectedFoodModal.name]?.count || 0}
                   initialUserScore={dishRatingsMap[selectedFoodModal.name]?.userScore ?? null}
+                  isFuture={isCurrentEntryFuture}
                   onRatingUpdated={(name, avg, count, userScore) => {
                     setDishRatingsMap((prev) => ({
                       ...prev,

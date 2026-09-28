@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { isDateInFuture } from '@/lib/dateUtils';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -131,6 +132,14 @@ export async function POST(req: NextRequest) {
     }
 
     const trimmedDishName = dishName.trim();
+
+    // Gelecekteki yemeklere oy vermeyi engelle
+    if (dateStr && isDateInFuture(null, dateStr)) {
+      return NextResponse.json(
+        { success: false, error: 'Gelecek tarihteki yemeklere henüz oy verilemez. Sadece bugüne ve geçmişe oy verilebilir.' },
+        { status: 400 }
+      );
+    }
 
     // Kullanıcı kimliği varsa daha önce oy verip vermediğini kontrol et
     if (userId) {
