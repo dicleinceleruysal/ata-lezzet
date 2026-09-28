@@ -158,6 +158,11 @@ export default function DailyMenuRating({
     }
   };
 
+  // Gelecek günlerde ve bugün dışındaki günlerde menü puanlama gösterilmez (sadece bugünde gözükür)
+  if (isFuture || !isToday) {
+    return null;
+  }
+
   const activeStarCount = hasVoted ? (userRating || 0) : (hoverRating || userRating || 0);
 
   return (

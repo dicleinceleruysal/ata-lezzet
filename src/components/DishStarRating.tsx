@@ -100,6 +100,11 @@ export default function DishStarRating({
     }
   };
 
+  // Gelecek günlerde oy verme yıldızları kesinlikle gösterilmez
+  if (isFuture) {
+    return null;
+  }
+
   const displayScore = hoverScore !== null ? hoverScore : userScore !== null ? userScore : Math.round(average);
 
   return (

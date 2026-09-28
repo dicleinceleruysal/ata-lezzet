@@ -498,6 +498,7 @@ export default function MenuButtons() {
 
   const entries = monthlyPlan?.entries || [];
   const currentEntry = entries[currentIndex] || null;
+  const isCurrentEntryToday = currentIndex === todayIndex;
 
   // Günün menüsünün gelecekte olup olmadığını kontrol et (sadece o güne ve geçmişe oy verilebilir)
   const isCurrentEntryFuture = useMemo(() => {
@@ -505,9 +506,9 @@ export default function MenuButtons() {
     return isDateInFuture(currentEntry.date, currentEntry.dateStr);
   }, [currentEntry]);
 
-  // Günün menüsündeki yemeklerin puanlarını çek
+  // Günün menüsündeki yemeklerin puanlarını çek (sadece bugün ise)
   useEffect(() => {
-    if (!currentEntry) return;
+    if (!currentEntry || !isCurrentEntryToday) return;
     const dishes = parseDishes(currentEntry.items, currentEntry.mealText);
     if (dishes.length === 0) return;
 
@@ -1084,23 +1085,25 @@ export default function MenuButtons() {
                                 {dish}
                               </h4>
 
-                              {/* Yemek Yıldız Puanlama */}
-                              <div className="mt-2 pt-1.5 border-t border-stone-100 flex items-center justify-between">
-                                <DishStarRating
-                                  dishName={dish}
-                                  dateStr={currentEntry.dateStr}
-                                  initialAverage={dishRatingsMap[dish]?.average || 0}
-                                  initialCount={dishRatingsMap[dish]?.count || 0}
-                                  initialUserScore={dishRatingsMap[dish]?.userScore ?? null}
-                                  isFuture={isCurrentEntryFuture}
-                                  onRatingUpdated={(name, avg, count, userScore) => {
-                                    setDishRatingsMap((prev) => ({
-                                      ...prev,
-                                      [name]: { average: avg, count, userScore },
-                                    }));
-                                  }}
-                                />
-                              </div>
+                              {/* Yemek Yıldız Puanlama (Sadece Bugün) */}
+                              {isCurrentEntryToday && (
+                                <div className="mt-2 pt-1.5 border-t border-stone-100 flex items-center justify-between">
+                                  <DishStarRating
+                                    dishName={dish}
+                                    dateStr={currentEntry.dateStr}
+                                    initialAverage={dishRatingsMap[dish]?.average || 0}
+                                    initialCount={dishRatingsMap[dish]?.count || 0}
+                                    initialUserScore={dishRatingsMap[dish]?.userScore ?? null}
+                                    isFuture={false}
+                                    onRatingUpdated={(name, avg, count, userScore) => {
+                                      setDishRatingsMap((prev) => ({
+                                        ...prev,
+                                        [name]: { average: avg, count, userScore },
+                                      }));
+                                    }}
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -1118,12 +1121,14 @@ export default function MenuButtons() {
                       </div>
                     </div>
 
-                    {/* Günün Menüsünü 5 Yıldız ile Puanlama (Sadece Bugün ve Geçmiş) */}
-                    <DailyMenuRating
-                      dateStr={currentEntry.dateStr}
-                      isToday={currentIndex === todayIndex}
-                      isFuture={isCurrentEntryFuture}
-                    />
+                    {/* Günün Menüsünü 5 Yıldız ile Puanlama (Sadece Bugün) */}
+                    {isCurrentEntryToday && (
+                      <DailyMenuRating
+                        dateStr={currentEntry.dateStr}
+                        isToday={true}
+                        isFuture={false}
+                      />
+                    )}
                   </>
                 );
               })()}
@@ -1709,26 +1714,28 @@ export default function MenuButtons() {
                 {selectedFoodModal.name}
               </h3>
 
-              {/* Modal İçi Puanlama */}
-              <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/80">
-                <span className="block text-[11px] font-bold text-stone-500 mb-1">
-                  Yemek Değerlendirmesi:
-                </span>
-                <DishStarRating
-                  dishName={selectedFoodModal.name}
-                  dateStr={currentEntry?.dateStr}
-                  initialAverage={dishRatingsMap[selectedFoodModal.name]?.average || 0}
-                  initialCount={dishRatingsMap[selectedFoodModal.name]?.count || 0}
-                  initialUserScore={dishRatingsMap[selectedFoodModal.name]?.userScore ?? null}
-                  isFuture={isCurrentEntryFuture}
-                  onRatingUpdated={(name, avg, count, userScore) => {
-                    setDishRatingsMap((prev) => ({
-                      ...prev,
-                      [name]: { average: avg, count, userScore },
-                    }));
-                  }}
-                />
-              </div>
+              {/* Modal İçi Puanlama (Sadece Bugün) */}
+              {isCurrentEntryToday && (
+                <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/80">
+                  <span className="block text-[11px] font-bold text-stone-500 mb-1">
+                    Yemek Değerlendirmesi:
+                  </span>
+                  <DishStarRating
+                    dishName={selectedFoodModal.name}
+                    dateStr={currentEntry?.dateStr}
+                    initialAverage={dishRatingsMap[selectedFoodModal.name]?.average || 0}
+                    initialCount={dishRatingsMap[selectedFoodModal.name]?.count || 0}
+                    initialUserScore={dishRatingsMap[selectedFoodModal.name]?.userScore ?? null}
+                    isFuture={false}
+                    onRatingUpdated={(name, avg, count, userScore) => {
+                      setDishRatingsMap((prev) => ({
+                        ...prev,
+                        [name]: { average: avg, count, userScore },
+                      }));
+                    }}
+                  />
+                </div>
+              )}
 
               <div className="pt-2">
                 <button
