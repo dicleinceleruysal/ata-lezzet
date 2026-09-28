@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 const NAV_ITEMS = [
   { href: '/admin/listeler', label: 'Menü Yönetimi', shortLabel: 'Menüler', icon: '📅' },
@@ -13,6 +13,24 @@ const NAV_ITEMS = [
 
 export default function AdminNavbar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const isLoginPage = pathname === '/admin/login';
+
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+      router.push('/admin/login');
+      router.refresh();
+    } catch {
+      // ignore
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   return (
     <nav className="bg-white/95 backdrop-blur-md border-b border-stone-200 sticky top-0 z-40 shadow-xs">
@@ -20,7 +38,7 @@ export default function AdminNavbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo & Başlık */}
           <div className="flex items-center gap-3 sm:gap-6">
-            <Link href="/admin" className="flex items-center gap-2 font-black text-stone-900 text-base sm:text-lg group">
+            <Link href={isLoginPage ? '/' : '/admin'} className="flex items-center gap-2 font-black text-stone-900 text-base sm:text-lg group">
               <img
                 src="/ata-lezzet-logo.jpg"
                 alt="Ata Lezzet"
@@ -34,30 +52,32 @@ export default function AdminNavbar() {
               </span>
             </Link>
 
-            {/* Masaüstü Sekmeler */}
-            <div className="hidden sm:flex sm:space-x-1.5 text-xs sm:text-sm font-bold">
-              {NAV_ITEMS.map((item) => {
-                const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
-                      isActive
-                        ? 'bg-amber-500 text-white shadow-xs font-black'
-                        : 'text-stone-700 hover:text-amber-900 hover:bg-amber-50'
-                    }`}
-                  >
-                    <span>{item.icon}</span>
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
+            {/* Masaüstü Sekmeler (Giriş sayfasında gizle) */}
+            {!isLoginPage && (
+              <div className="hidden sm:flex sm:space-x-1.5 text-xs sm:text-sm font-bold">
+                {NAV_ITEMS.map((item) => {
+                  const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
+                        isActive
+                          ? 'bg-amber-500 text-white shadow-xs font-black'
+                          : 'text-stone-700 hover:text-amber-900 hover:bg-amber-50'
+                      }`}
+                    >
+                      <span>{item.icon}</span>
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* Sağ Eylem: Siteye Dön */}
-          <div className="flex items-center">
+          {/* Sağ Eylemler: Siteye Dön & Çıkış Yap */}
+          <div className="flex items-center gap-2">
             <Link
               href="/"
               className="text-xs sm:text-sm font-bold text-stone-600 hover:text-stone-950 px-2.5 sm:px-3 py-1.5 rounded-xl border border-stone-200 hover:border-amber-300 hover:bg-amber-50/60 transition-all flex items-center gap-1.5 shadow-2xs"
@@ -66,30 +86,45 @@ export default function AdminNavbar() {
               <span className="hidden sm:inline">Kullanıcı Ekranı</span>
               <span className="sm:hidden">Site</span>
             </Link>
+
+            {!isLoginPage && (
+              <button
+                onClick={handleLogout}
+                disabled={loggingOut}
+                title="Yönetici oturumunu kapat"
+                className="text-xs sm:text-sm font-bold text-rose-700 hover:text-rose-900 px-2.5 sm:px-3 py-1.5 rounded-xl border border-rose-200 hover:border-rose-300 hover:bg-rose-50/70 transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
+              >
+                <span>🚪</span>
+                <span className="hidden sm:inline">Çıkış Yap</span>
+                <span className="sm:hidden">Çıkış</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Mobil Sekme Çubuğu */}
-      <div className="sm:hidden border-t border-stone-200/80 bg-stone-50/90 px-2 py-1.5 flex justify-around items-center gap-1">
-        {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex-1 py-1.5 px-1 rounded-xl text-center text-xs font-bold transition-all flex flex-col items-center justify-center min-h-[44px] ${
-                isActive
-                  ? 'bg-amber-500 text-white shadow-2xs font-black scale-100'
-                  : 'text-stone-600 hover:text-stone-900 active:bg-stone-200/50'
-              }`}
-            >
-              <span className="text-sm leading-none">{item.icon}</span>
-              <span className="text-[10px] mt-0.5 leading-tight">{item.shortLabel}</span>
-            </Link>
-          );
-        })}
-      </div>
+      {/* Mobil Sekme Çubuğu (Giriş sayfasında gizle) */}
+      {!isLoginPage && (
+        <div className="sm:hidden border-t border-stone-200/80 bg-stone-50/90 px-2 py-1.5 flex justify-around items-center gap-1">
+          {NAV_ITEMS.map((item) => {
+            const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex-1 py-1.5 px-1 rounded-xl text-center text-xs font-bold transition-all flex flex-col items-center justify-center min-h-[44px] ${
+                  isActive
+                    ? 'bg-amber-500 text-white shadow-2xs font-black scale-100'
+                    : 'text-stone-600 hover:text-stone-900 active:bg-stone-200/50'
+                }`}
+              >
+                <span className="text-sm leading-none">{item.icon}</span>
+                <span className="text-[10px] mt-0.5 leading-tight">{item.shortLabel}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </nav>
   );
 }
