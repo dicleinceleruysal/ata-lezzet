@@ -38,25 +38,49 @@ interface RatingResponse {
 
 export default function AdminPuanlamaPage() {
   const [data, setData] = useState<RatingResponse | null>(null);
+  const [dishRatings, setDishRatings] = useState<{ dishName: string; average: number; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'days' | 'votes'>('days');
+  const [activeTab, setActiveTab] = useState<'dishes' | 'days' | 'votes'>('dishes');
 
   const fetchRatings = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('/api/ratings?admin=true', { cache: 'no-store' });
+      const [res, dishRes] = await Promise.all([
+        fetch('/api/ratings?admin=true', { cache: 'no-store' }),
+        fetch('/api/ratings/dish?summary=true', { cache: 'no-store' }),
+      ]);
       if (!res.ok) throw new Error('Puanlar yüklenemedi.');
       const json = await res.json();
       setData(json);
+
+      if (dishRes.ok) {
+        const dishJson = await dishRes.json();
+        if (dishJson.success && Array.isArray(dishJson.dishes)) {
+          setDishRatings(dishJson.dishes);
+        }
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Bir hata oluştu.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResetDishRating = async (dishName: string) => {
+    if (!confirm(`"${dishName}" yemeğine ait tüm puanları sıfırlamak istediğinize emin misiniz?`)) return;
+    try {
+      const res = await fetch(`/api/ratings/dish?dishName=${encodeURIComponent(dishName)}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Yemek puanları silinemedi.');
+      fetchRatings();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Hata oluştu.');
     }
   };
 
@@ -125,6 +149,12 @@ export default function AdminPuanlamaPage() {
     searchTerm.trim() === ''
       ? true
       : v.dateStr.toLowerCase().includes(searchTerm.toLowerCase().trim())
+  );
+
+  const filteredDishes = dishRatings.filter((d) =>
+    searchTerm.trim() === ''
+      ? true
+      : d.dishName.toLowerCase().includes(searchTerm.toLowerCase().trim())
   );
 
   return (
@@ -234,10 +264,20 @@ export default function AdminPuanlamaPage() {
 
       {/* Arama & Sekme Seçici */}
       <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="inline-flex p-1 bg-stone-100 rounded-xl">
+        <div className="inline-flex p-1 bg-stone-100 rounded-xl flex-wrap">
+          <button
+            onClick={() => setActiveTab('dishes')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'dishes'
+                ? 'bg-white text-stone-900 shadow-xs'
+                : 'text-stone-600 hover:text-stone-900'
+            }`}
+          >
+            🍲 Yemek Puanları ({dishRatings.length})
+          </button>
           <button
             onClick={() => setActiveTab('days')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'days'
                 ? 'bg-white text-stone-900 shadow-xs'
                 : 'text-stone-600 hover:text-stone-900'
@@ -247,7 +287,7 @@ export default function AdminPuanlamaPage() {
           </button>
           <button
             onClick={() => setActiveTab('votes')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'votes'
                 ? 'bg-white text-stone-900 shadow-xs'
                 : 'text-stone-600 hover:text-stone-900'
@@ -262,7 +302,7 @@ export default function AdminPuanlamaPage() {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Tarihe göre ara (örn: 22 Eylül)..."
+            placeholder="Yemek veya tarihe göre ara..."
             className="w-full pl-9 pr-4 py-2 rounded-xl border border-stone-200 bg-stone-50 text-xs focus:outline-none focus:border-amber-500 focus:bg-white transition-all font-medium text-stone-800"
           />
           <span className="absolute left-3 top-2.5 text-stone-400 text-xs">🔍</span>
@@ -289,7 +329,107 @@ export default function AdminPuanlamaPage() {
         </div>
       ) : (
         <>
-          {/* 1. SEKME: GÜN GÜN ÖZET */}
+          {/* 1. SEKME: YEMEK PUANLARI VE SIRALAMASI */}
+          {activeTab === 'dishes' && (
+            <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
+              <div className="p-4 sm:p-5 border-b border-stone-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <h3 className="font-black text-stone-900 text-base flex items-center gap-2">
+                    <span>🏆</span> Yemek Memnuniyet Sıralaması ({filteredDishes.length})
+                  </h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Otomatik menü oluşturulurken bu puanlar temel alınır; yüksek puanlı yemekler daha sık listelenir.
+                  </p>
+                </div>
+                {dishRatings.length > 0 && (
+                  <span className="text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200 px-3 py-1 rounded-xl self-start sm:self-auto">
+                    Toplam {dishRatings.reduce((sum, d) => sum + d.count, 0)} Oy
+                  </span>
+                )}
+              </div>
+
+              {filteredDishes.length === 0 ? (
+                <div className="p-12 text-center text-stone-400 font-bold text-sm">
+                  {searchTerm ? 'Aramanıza uygun oylanmış yemek bulunamadı.' : 'Henüz hiçbir yemek kullanıcılar tarafından puanlanmamış.'}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs sm:text-sm">
+                    <thead className="bg-stone-50/80 border-b border-stone-200 text-stone-600 font-black uppercase text-[11px] tracking-wider">
+                      <tr>
+                        <th className="py-3.5 px-4 sm:px-6">Sıra & Yemek</th>
+                        <th className="py-3.5 px-4 text-center">Ortalama Puan</th>
+                        <th className="py-3.5 px-4 text-center">Toplam Oy</th>
+                        <th className="py-3.5 px-4 text-center">Durum</th>
+                        <th className="py-3.5 px-4 text-right">İşlem</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100 font-medium text-stone-800">
+                      {filteredDishes.map((dish, idx) => {
+                        const isTop = dish.average >= 4.5 && dish.count >= 2;
+                        const isLow = dish.average < 3.0 && dish.count >= 2;
+
+                        return (
+                          <tr key={dish.dishName} className="hover:bg-amber-50/40 transition-colors">
+                            <td className="py-3.5 px-4 sm:px-6 font-bold flex items-center gap-3">
+                              <span
+                                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
+                                  idx === 0
+                                    ? 'bg-amber-400 text-white shadow-xs'
+                                    : idx === 1
+                                    ? 'bg-stone-300 text-stone-800'
+                                    : idx === 2
+                                    ? 'bg-amber-700 text-white'
+                                    : 'bg-stone-100 text-stone-500'
+                                }`}
+                              >
+                                {idx + 1}
+                              </span>
+                              <span className="text-stone-900 text-sm font-black">{dish.dishName}</span>
+                            </td>
+                            <td className="py-3.5 px-4 text-center">
+                              <div className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg font-black text-amber-900">
+                                <span>⭐</span>
+                                <span>{dish.average.toFixed(1)}</span>
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4 text-center font-bold text-stone-600">
+                              {dish.count} oy
+                            </td>
+                            <td className="py-3.5 px-4 text-center">
+                              {isTop ? (
+                                <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-black border border-emerald-300">
+                                  🏆 En Sevilen
+                                </span>
+                              ) : isLow ? (
+                                <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-900 text-[10px] font-black border border-rose-300">
+                                  ⚠️ Düşük Puan
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-1 rounded-full bg-stone-100 text-stone-600 text-[10px] font-bold border border-stone-200">
+                                  👍 Beğenilen
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4 text-right">
+                              <button
+                                onClick={() => handleResetDishRating(dish.dishName)}
+                                className="px-2.5 py-1 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 cursor-pointer transition-colors"
+                              >
+                                Sıfırla
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 2. SEKME: GÜN GÜN ÖZET */}
           {activeTab === 'days' && (
             <div className="space-y-4">
               {filteredDays.length === 0 ? (

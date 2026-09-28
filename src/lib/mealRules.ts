@@ -201,7 +201,8 @@ export function pickSideForWeek(
   mainDishName: string,
   allSideDishes: string[],
   usedSubtypesThisWeek: Set<SideSubType>,
-  recentSides: string[] = []
+  recentSides: string[] = [],
+  getWeight?: (dish: string) => number
 ): { side: string; subType: SideSubType } {
   const validSides = getValidSidesForMain(mainDishName, allSideDishes);
   if (validSides.length === 0) {
@@ -214,7 +215,7 @@ export function pickSideForWeek(
 
   const mainType = classifyMainDish(mainDishName);
   // Et/Tavuk yemeklerinde; sebze ve bakliyatın ihtiyaç duyacağı pirinç ve bulguru rezerve etmek için
-  // öncelikle makarna, erişte, patates tercih et
+  // Öncelikle makarna, erişte, patates tercih et
   if (mainType === 'et_tavuk' && freshSides.length > 0) {
     const preferredForMeat = freshSides.filter((s) => {
       const sub = getSideSubType(s);
@@ -229,7 +230,22 @@ export function pickSideForWeek(
   const availableWithoutRecent = candidatePool.filter((item) => !recentSides.includes(item));
   const finalCandidates = availableWithoutRecent.length > 0 ? availableWithoutRecent : candidatePool;
 
-  const selected = finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
+  let selected = finalCandidates[0];
+  if (getWeight) {
+    const weights = finalCandidates.map(getWeight);
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+    let rand = Math.random() * totalWeight;
+    for (let i = 0; i < finalCandidates.length; i++) {
+      rand -= weights[i];
+      if (rand <= 0) {
+        selected = finalCandidates[i];
+        break;
+      }
+    }
+  } else {
+    selected = finalCandidates[Math.floor(Math.random() * finalCandidates.length)];
+  }
+
   const subType = getSideSubType(selected);
   return { side: selected, subType };
 }

@@ -12,6 +12,7 @@ import {
 import { getMealCalories } from '@/lib/mealCalories';
 import { getDishImageUrl } from '@/lib/dishVisuals';
 import DailyMenuRating from './DailyMenuRating';
+import DishStarRating from './DishStarRating';
 import PrintMenuModal from './PrintMenuModal';
 import { exportMonthlyMenuToExcel } from '@/lib/exportUtils';
 
@@ -372,6 +373,11 @@ export default function MenuButtons() {
     imageUrl: string | null;
   } | null>(null);
 
+  // Yemek tekil puanları haritası
+  const [dishRatingsMap, setDishRatingsMap] = useState<
+    Record<string, { average: number; count: number; userScore: number | null }>
+  >({});
+
   // Yazdırma ve PDF Modal Durumu
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
@@ -491,6 +497,35 @@ export default function MenuButtons() {
 
   const entries = monthlyPlan?.entries || [];
   const currentEntry = entries[currentIndex] || null;
+
+  // Günün menüsündeki yemeklerin puanlarını çek
+  useEffect(() => {
+    if (!currentEntry) return;
+    const dishes = parseDishes(currentEntry.items, currentEntry.mealText);
+    if (dishes.length === 0) return;
+
+    let userId = '';
+    if (typeof window !== 'undefined') {
+      userId = localStorage.getItem('ata_dish_rater_id') || '';
+    }
+
+    const params = new URLSearchParams();
+    params.set('dishNames', dishes.join(','));
+    if (userId) params.set('userId', userId);
+    if (currentEntry.dateStr) params.set('dateStr', currentEntry.dateStr);
+
+    fetch(`/api/ratings/dish?${params.toString()}`, { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.ratings) {
+          setDishRatingsMap((prev) => ({
+            ...prev,
+            ...data.ratings,
+          }));
+        }
+      })
+      .catch(() => {});
+  }, [currentEntry?.id, currentEntry?.dateStr]);
 
   // Excel (.xlsx) Olarak İndirme
   const handleExportExcel = useCallback(() => {
@@ -1041,6 +1076,23 @@ export default function MenuButtons() {
                               <h4 className="font-black text-stone-900 text-sm sm:text-base leading-snug group-hover:text-amber-800 transition-colors">
                                 {dish}
                               </h4>
+
+                              {/* Yemek Yıldız Puanlama */}
+                              <div className="mt-2 pt-1.5 border-t border-stone-100 flex items-center justify-between">
+                                <DishStarRating
+                                  dishName={dish}
+                                  dateStr={currentEntry.dateStr}
+                                  initialAverage={dishRatingsMap[dish]?.average || 0}
+                                  initialCount={dishRatingsMap[dish]?.count || 0}
+                                  initialUserScore={dishRatingsMap[dish]?.userScore ?? null}
+                                  onRatingUpdated={(name, avg, count, userScore) => {
+                                    setDishRatingsMap((prev) => ({
+                                      ...prev,
+                                      [name]: { average: avg, count, userScore },
+                                    }));
+                                  }}
+                                />
+                              </div>
                             </div>
                           </div>
                         );
@@ -1647,6 +1699,26 @@ export default function MenuButtons() {
               <h3 className="text-xl font-black text-stone-900 tracking-tight">
                 {selectedFoodModal.name}
               </h3>
+
+              {/* Modal İçi Puanlama */}
+              <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200/80">
+                <span className="block text-[11px] font-bold text-stone-500 mb-1">
+                  Yemek Değerlendirmesi:
+                </span>
+                <DishStarRating
+                  dishName={selectedFoodModal.name}
+                  dateStr={currentEntry?.dateStr}
+                  initialAverage={dishRatingsMap[selectedFoodModal.name]?.average || 0}
+                  initialCount={dishRatingsMap[selectedFoodModal.name]?.count || 0}
+                  initialUserScore={dishRatingsMap[selectedFoodModal.name]?.userScore ?? null}
+                  onRatingUpdated={(name, avg, count, userScore) => {
+                    setDishRatingsMap((prev) => ({
+                      ...prev,
+                      [name]: { average: avg, count, userScore },
+                    }));
+                  }}
+                />
+              </div>
 
               <div className="pt-2">
                 <button

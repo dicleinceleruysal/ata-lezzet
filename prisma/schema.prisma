@@ -98,3 +98,18 @@ model MenuRating {
   @@index([dateStr])
   @@index([userId])
 }
+
+model DishRating {
+  id        String   @id @default(cuid())
+  dishName  String   // e.g. "MERCİMEK ÇORBASI"
+  dateStr   String?  // Hangi günün menüsünden oylandığı (isteğe bağlı)
+  score     Int      // 1..5
+  userId    String?  // Tekil kullanıcı kimliği
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dishName])
+  @@index([userId])
+  @@index([dateStr])
+}
+

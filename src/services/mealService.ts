@@ -709,6 +709,39 @@ export async function generateSmartMonthlyMenu(options: {
   // Seçilen ayın gün sayısını bul
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
 
+  // Veritabanındaki tüm yemeklerin puan ortalamalarını çek ve ağırlık haritası oluştur
+  const ratingGroups = await prisma.dishRating.groupBy({
+    by: ['dishName'],
+    _avg: { score: true },
+    _count: { score: true },
+  });
+
+  const ratingsMap = new Map<string, { average: number; count: number }>();
+  for (const rg of ratingGroups) {
+    ratingsMap.set(normalizeDishName(rg.dishName), {
+      average: rg._avg.score || 0,
+      count: rg._count.score || 0,
+    });
+  }
+
+  // Puan ağırlıklı seçim: Yüksek yıldızlı yemeklerin seçilme olasılığı kat kat fazladır!
+  const getDishWeight = (dish: string): number => {
+    const norm = normalizeDishName(dish);
+    const r = ratingsMap.get(norm);
+    if (!r || r.count === 0) {
+      // Henüz oylanmamış yemeklere standart 3.5 yıldız dengi nötr şans ver (yeni yemekler de şans bulsun)
+      return 22;
+    }
+    // r.average 1..5 arasındadır
+    // 5 yıldız -> ~56 ağırlık
+    // 4 yıldız -> ~32 ağırlık
+    // 3 yıldız -> ~15 ağırlık
+    // 2 yıldız -> ~5.6 ağırlık
+    // 1 yıldız -> 1 ağırlık (neredeyse seçilmez)
+    const confidenceMultiplier = 1 + Math.min(r.count, 20) * 0.05;
+    return Math.max(1, Math.pow(r.average, 2.5) * confidenceMultiplier);
+  };
+
   const generatedEntries = [];
   const recentSoups: string[] = [];
   const recentMains: string[] = [];
@@ -719,7 +752,22 @@ export async function generateSmartMonthlyMenu(options: {
     if (!pool || pool.length === 0) return '';
     const available = pool.filter((item) => !recentList.includes(item));
     const candidates = available.length > 0 ? available : pool;
-    const selected = candidates[Math.floor(Math.random() * candidates.length)];
+
+    // Yüksek yıldızlı yemeklere öncelik veren ağırlıklı seçim
+    const weights = candidates.map(getDishWeight);
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+
+    let randomValue = Math.random() * totalWeight;
+    let selected = candidates[0];
+
+    for (let i = 0; i < candidates.length; i++) {
+      randomValue -= weights[i];
+      if (randomValue <= 0) {
+        selected = candidates[i];
+        break;
+      }
+    }
+
     recentList.push(selected);
     if (recentList.length > maxRecent) {
       recentList.shift();
@@ -783,7 +831,13 @@ export async function generateSmartMonthlyMenu(options: {
     const soup = isSaturday ? '' : pickRandom(mealsByCat.corba, recentSoups, 4);
 
     // 2. Yan Yemek: Aynı hafta içinde çeşit tekrarı (bulgur, pirinç, makarna, erişte, börek, patates) yapılmaz!
-    const { side, subType } = pickSideForWeek(main, mealsByCat.yan_yemek, usedSideSubtypesThisWeek, recentSides);
+    const { side, subType } = pickSideForWeek(
+      main,
+      mealsByCat.yan_yemek,
+      usedSideSubtypesThisWeek,
+      recentSides,
+      getDishWeight
+    );
     if (side) {
       recentSides.push(side);
       if (recentSides.length > 4) {
