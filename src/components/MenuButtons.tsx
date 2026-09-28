@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   PixarSoup,
   PixarMainDish,
@@ -658,6 +658,46 @@ export default function MenuButtons() {
     }
   };
 
+  // Mobilde sağa / sola kaydırma (Swipe) ile gün değiştirme (Sadece Mobilde)
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
+  const touchStartTimeRef = useRef<number>(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      touchStartXRef.current = e.touches[0].clientX;
+      touchStartYRef.current = e.touches[0].clientY;
+      touchStartTimeRef.current = Date.now();
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const elapsed = Date.now() - touchStartTimeRef.current;
+
+    const diffX = touchStartXRef.current - touchEndX;
+    const diffY = touchStartYRef.current - touchEndY;
+
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+
+    // Hızlı ve kasıtlı kaydırmalar (800ms altı)
+    // Yatay hareket dikey hareketten en az 1.3 kat belirgin olmalı (dikey sayfa kaydırmasıyla çakışmasın)
+    // Ve en az 40px kaydırılmış olmalı
+    if (elapsed < 800 && Math.abs(diffX) > Math.abs(diffY) * 1.3 && Math.abs(diffX) > 40) {
+      if (diffX > 0) {
+        // Parmağı sola doğru çekti -> Sonraki gün
+        handleNextDay();
+      } else {
+        // Parmağı sağa doğru çekti -> Önceki gün
+        handlePrevDay();
+      }
+    }
+  };
+
   const handleGoToToday = () => {
     setCurrentIndex(todayIndex);
     setActiveTab('daily');
@@ -765,7 +805,11 @@ export default function MenuButtons() {
       {/* 1. GÖRÜNÜM: GÜNÜN MENÜSÜ & OK NAVİGASYONU                    */}
       {/* ============================================================ */}
       {!loading && !error && activeTab === 'daily' && (
-        <div className="bg-white rounded-3xl p-5 sm:p-8 border-2 border-amber-200/90 shadow-[0_16px_36px_rgba(245,158,11,0.12)] space-y-6">
+        <div
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          className="bg-white rounded-3xl p-5 sm:p-8 border-2 border-amber-200/90 shadow-[0_16px_36px_rgba(245,158,11,0.12)] space-y-6 touch-pan-y"
+        >
           {/* Üst Navigasyon Çubuğu: [Sol Ok] — [Tarih & Gün Bilgisi] — [Sağ Ok] */}
           <div className="flex items-center justify-between gap-2 p-2.5 sm:p-3.5 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 rounded-2xl border border-amber-200 shadow-2xs">
             {/* Sol Ok Butonu */}
@@ -778,7 +822,7 @@ export default function MenuButtons() {
                   ? 'opacity-35 cursor-not-allowed text-stone-400 bg-stone-100'
                   : 'bg-white hover:bg-amber-500 hover:text-white text-stone-800 border border-amber-200 shadow-xs active:scale-95'
               }`}
-              title="Önceki Gün (Klavye: Sol Ok)"
+              title="Önceki Gün (Klavye: Sol Ok, Mobil: Sağa Kaydır)"
             >
               <span className="text-base sm:text-lg group-hover:-translate-x-0.5 transition-transform">&larr;</span>
               <span className="hidden sm:inline">Önceki</span>
@@ -823,11 +867,18 @@ export default function MenuButtons() {
                   ? 'opacity-35 cursor-not-allowed text-stone-400 bg-stone-100'
                   : 'bg-white hover:bg-amber-500 hover:text-white text-stone-800 border border-amber-200 shadow-xs active:scale-95'
               }`}
-              title="Sonraki Gün (Klavye: Sağ Ok)"
+              title="Sonraki Gün (Klavye: Sağ Ok, Mobil: Sola Kaydır)"
             >
               <span className="hidden sm:inline">Sonraki</span>
               <span className="text-base sm:text-lg group-hover:translate-x-0.5 transition-transform">&rarr;</span>
             </button>
+          </div>
+
+          {/* Sadece Mobilde Görünen Sağa / Sola Kaydırma Bilgilendirme Rozeti */}
+          <div className="sm:hidden flex items-center justify-center gap-2 py-1 px-3 rounded-full bg-amber-50/80 border border-amber-200/60 text-[11px] font-bold text-amber-900/70 w-fit mx-auto shadow-2xs select-none">
+            <span className="animate-pulse">👈</span>
+            <span>Gün değiştirmek için kaydırın</span>
+            <span className="animate-pulse">👉</span>
           </div>
 
           {/* Haftalık Mini Gün Seçici Şerit (Pazartesi - Cumartesi Hızlı Tıklama) */}
