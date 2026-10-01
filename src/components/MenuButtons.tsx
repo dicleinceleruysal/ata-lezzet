@@ -382,27 +382,15 @@ export default function MenuButtons() {
   // Yazdırma ve PDF Modal Durumu
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
-  // Seçili ay ve yıl durumu (varsayılan: bu ay ve bu yıl)
-  const [selectedYear, setSelectedYear] = useState<number>(() => new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState<number>(() => new Date().getMonth() + 1);
-  const [availableMonths, setAvailableMonths] = useState<Array<{ year: number; month: number; monthName: string }>>([]);
-
-  // Onaylı ayların özetini çek (Ay değiştirici için)
-  useEffect(() => {
-    fetch('/api/plans/monthly?summary=true', { cache: 'no-store' })
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          // Ayları kronolojik sırada sırala
-          const sorted = [...data].sort((a, b) => {
-            if (a.year !== b.year) return a.year - b.year;
-            return a.month - b.month;
-          });
-          setAvailableMonths(sorted);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  // Seçili ay ve yıl durumu (Mevcut aktif ay)
+  const [selectedYear] = useState<number>(() => {
+    const nowTurkey = new Date(Date.now() + 3 * 3600 * 1000);
+    return nowTurkey.getUTCFullYear();
+  });
+  const [selectedMonth] = useState<number>(() => {
+    const nowTurkey = new Date(Date.now() + 3 * 3600 * 1000);
+    return nowTurkey.getUTCMonth() + 1;
+  });
 
   // Veritabanı yemek, kalori ve görsel haritasını çek
   useEffect(() => {
@@ -770,13 +758,6 @@ export default function MenuButtons() {
   };
 
   const handleGoToToday = () => {
-    const nowTurkey = new Date(Date.now() + 3 * 3600 * 1000);
-    const curY = nowTurkey.getUTCFullYear();
-    const curM = nowTurkey.getUTCMonth() + 1;
-    if (selectedYear !== curY || selectedMonth !== curM) {
-      setSelectedYear(curY);
-      setSelectedMonth(curM);
-    }
     setCurrentIndex(todayIndex);
     setActiveTab('daily');
   };
@@ -825,9 +806,9 @@ export default function MenuButtons() {
   }, [weekGroups, selectedWeekFilter, searchQuery]);
 
   return (
-    <section className="w-full space-y-6">
+    <section id="daily-menu-section" className="w-full space-y-6">
       {/* ÜST GEÇİŞ SEKMESİ: [ 🍽️ Günün Menüsü ] vs [ 📅 Aylık Takvim ] */}
-      <div className="flex flex-col items-center justify-center gap-2.5">
+      <div className="flex items-center justify-center">
         <div className="inline-flex p-1.5 bg-stone-200/60 backdrop-blur-xs rounded-2xl border border-stone-300/50 shadow-inner">
           <button
             type="button"
@@ -860,33 +841,6 @@ export default function MenuButtons() {
             )}
           </button>
         </div>
-
-        {/* Mevcut Aylar Arasında Hızlı Geçiş Butonları */}
-        {availableMonths.length > 1 && (
-          <div className="flex items-center gap-1.5 flex-wrap justify-center pt-1">
-            <span className="text-[11px] font-bold text-stone-400 mr-1">Dönem:</span>
-            {availableMonths.map((m) => {
-              const isSelected = m.year === selectedYear && m.month === selectedMonth;
-              return (
-                <button
-                  key={`${m.year}-${m.month}`}
-                  type="button"
-                  onClick={() => {
-                    setSelectedYear(m.year);
-                    setSelectedMonth(m.month);
-                  }}
-                  className={`px-3 py-1 text-xs font-black rounded-xl transition-all cursor-pointer border ${
-                    isSelected
-                      ? 'bg-amber-500 text-stone-950 border-amber-600 shadow-xs scale-105'
-                      : 'bg-white/90 text-stone-600 border-stone-300 hover:bg-stone-100 hover:text-stone-900'
-                  }`}
-                >
-                  {m.monthName}
-                </button>
-              );
-            })}
-          </div>
-        )}
       </div>
 
       {/* Yükleniyor Durumu */}

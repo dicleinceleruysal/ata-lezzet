@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import PwaRegister from '@/components/PwaRegister';
+import MenuNotificationReminder from '@/components/MenuNotificationReminder';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -44,6 +45,7 @@ export default function RootLayout({
       <body className="antialiased selection:bg-amber-100 selection:text-amber-900">
         {children}
         <PwaRegister />
+        <MenuNotificationReminder />
       </body>
     </html>
   );

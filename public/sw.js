@@ -146,3 +146,38 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// 4. Bildirim Tıklama Olayı (Notification Click Handler)
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+
+// 5. Arka Plan Mesajı İle Bildirim Gönderme (Show Notification Message)
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const { title, body, icon, badge, data } = event.data;
+    self.registration.showNotification(title || 'Ata Lezzet - Günün Menüsü 🍽️', {
+      body: body || 'Günün menüsüne baktınız mı? Bugünün lezzetlerini kaçırmayın!',
+      icon: icon || '/icons/icon-192.png',
+      badge: badge || '/icons/icon-192.png',
+      tag: 'daily-menu-reminder',
+      renotify: true,
+      data: data || { url: '/' },
+      vibrate: [200, 100, 200],
+    });
+  }
+});
