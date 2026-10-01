@@ -261,9 +261,11 @@ export async function getMonthlyPlan(year?: number, month?: number) {
   }
 
   if (!plan) {
+    // Türkiye saati (UTC+3) ile yıl ve ayı güvenli hesapla
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
+    const trTime = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+    const currentYear = trTime.getUTCFullYear();
+    const currentMonth = trTime.getUTCMonth() + 1;
 
     // Önce mevcut aya ait plan var mı kontrol et
     plan = await prisma.monthlyPlan.findUnique({
@@ -275,9 +277,15 @@ export async function getMonthlyPlan(year?: number, month?: number) {
       },
     });
 
-    // Eğer mevcut ayın planı yoksa, en son eklenen veya en güncel planı bul
+    // Eğer mevcut ayın planı yoksa, en güncel planı bul (tercihen bugünden önceki en son plan)
     if (!plan) {
       plan = await prisma.monthlyPlan.findFirst({
+        where: {
+          OR: [
+            { year: { lte: currentYear }, month: { lte: currentMonth } },
+            { year: { lt: currentYear } },
+          ],
+        },
         orderBy: [{ year: 'desc' }, { month: 'desc' }],
         include: {
           entries: {
@@ -285,6 +293,17 @@ export async function getMonthlyPlan(year?: number, month?: number) {
           },
         },
       });
+
+      if (!plan) {
+        plan = await prisma.monthlyPlan.findFirst({
+          orderBy: [{ year: 'desc' }, { month: 'desc' }],
+          include: {
+            entries: {
+              orderBy: { date: 'asc' },
+            },
+          },
+        });
+      }
     }
   }
 

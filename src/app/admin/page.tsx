@@ -38,10 +38,21 @@ export default async function AdminDashboard() {
   });
 
   const monthlyPlanCount = await prisma.monthlyPlan.count();
-  const latestMonth = await prisma.monthlyPlan.findFirst({
-    orderBy: [{ year: 'desc' }, { month: 'desc' }],
+  const trNow = new Date(Date.now() + 3 * 3600 * 1000);
+  const curY = trNow.getUTCFullYear();
+  const curM = trNow.getUTCMonth() + 1;
+
+  let latestMonth = await prisma.monthlyPlan.findUnique({
+    where: { year_month: { year: curY, month: curM } },
     include: { entries: true },
   });
+
+  if (!latestMonth) {
+    latestMonth = await prisma.monthlyPlan.findFirst({
+      orderBy: [{ year: 'desc' }, { month: 'desc' }],
+      include: { entries: true },
+    });
+  }
 
   return (
     <div className="space-y-6">

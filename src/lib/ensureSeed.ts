@@ -1307,6 +1307,229 @@ export const INITIAL_MONTHLY_PLANS = [
   },
   {
     "year": 2026,
+    "month": 10,
+    "monthName": "Ekim 2026",
+    "entries": [
+      {
+        "date": "2026-10-01T12:00:00.000Z",
+        "dateStr": "1 Ekim 2026 Perşembe",
+        "dayName": "Perşembe",
+        "mealText": "ŞEHRİYE ÇORBASI, HAMBURGER, PATATES KIZARTMASI, SALATABAR",
+        "items": ["ŞEHRİYE ÇORBASI", "HAMBURGER", "PATATES KIZARTMASI", "SALATABAR"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-02T12:00:00.000Z",
+        "dateStr": "2 Ekim 2026 Cuma",
+        "dayName": "Cuma",
+        "mealText": "YAYLA ÇORBASI, BİBER DOLMASI, AVCI BÖREĞİ, SALATABAR",
+        "items": ["YAYLA ÇORBASI", "BİBER DOLMASI", "AVCI BÖREĞİ", "SALATABAR"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-03T12:00:00.000Z",
+        "dateStr": "3 Ekim 2026 Cumartesi",
+        "dayName": "Cumartesi",
+        "mealText": "ÇOBAN KAVURMA, PİLAV",
+        "items": ["ÇOBAN KAVURMA", "PİLAV"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-05T12:00:00.000Z",
+        "dateStr": "5 Ekim 2026 Pazartesi",
+        "dayName": "Pazartesi",
+        "mealText": "KREMALI MANTAR ÇORBASI, ETLİ NOHUT, PİLAV, SALATABAR, PUDİNG",
+        "items": ["KREMALI MANTAR ÇORBASI", "ETLİ NOHUT", "PİLAV", "SALATABAR", "PUDİNG"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-06T12:00:00.000Z",
+        "dateStr": "6 Ekim 2026 Salı",
+        "dayName": "Salı",
+        "mealText": "DOMATES ÇORBASI, ÇİN USULÜ TAVUK, SPAGETTİ, SALATABAR",
+        "items": ["DOMATES ÇORBASI", "ÇİN USULÜ TAVUK", "SPAGETTİ", "SALATABAR"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-07T12:00:00.000Z",
+        "dateStr": "7 Ekim 2026 Çarşamba",
+        "dayName": "Çarşamba",
+        "mealText": "MISIR ÇORBASI, GÜVEÇTE ET, BULGUR PİLAVI, SALATABAR",
+        "items": ["MISIR ÇORBASI", "GÜVEÇTE ET", "BULGUR PİLAVI", "SALATABAR"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-08T12:00:00.000Z",
+        "dateStr": "8 Ekim 2026 Perşembe",
+        "dayName": "Perşembe",
+        "mealText": "YOĞURT ÇORBASI, YEŞİL FASULYE, PİLAV, SALATABAR, MEYVE",
+        "items": ["YOĞURT ÇORBASI", "YEŞİL FASULYE", "PİLAV", "SALATABAR", "MEYVE"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-09T12:00:00.000Z",
+        "dateStr": "9 Ekim 2026 Cuma",
+        "dayName": "Cuma",
+        "mealText": "EZOGELİN ÇORBASI, PATATES OTURTMA, CEVİZLİ ERİŞTE, SALATABAR",
+        "items": ["EZOGELİN ÇORBASI", "PATATES OTURTMA", "CEVİZLİ ERİŞTE", "SALATABAR"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-10T12:00:00.000Z",
+        "dateStr": "10 Ekim 2026 Cumartesi",
+        "dayName": "Cumartesi",
+        "mealText": "KÖFTE, AYRAN",
+        "items": ["KÖFTE", "AYRAN"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-12T12:00:00.000Z",
+        "dateStr": "12 Ekim 2026 Pazartesi",
+        "dayName": "Pazartesi",
+        "mealText": "MERCİMEK ÇORBASI, ET DÖNER, PİLAV, SALATABAR",
+        "items": ["MERCİMEK ÇORBASI", "ET DÖNER", "PİLAV", "SALATABAR"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-13T12:00:00.000Z",
+        "dateStr": "13 Ekim 2026 Salı",
+        "dayName": "Salı",
+        "mealText": "TARHANA ÇORBASI, KABAK DOLMA, MAKARNA, KIBRIS TATLISI, SALATABAR",
+        "items": ["TARHANA ÇORBASI", "KABAK DOLMA", "MAKARNA", "KIBRIS TATLISI", "SALATABAR"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-14T12:00:00.000Z",
+        "dateStr": "14 Ekim 2026 Çarşamba",
+        "dayName": "Çarşamba",
+        "mealText": "SEBZE ÇORBASI, IZGARA KANAT, BULGUR PİLAVI, SALATABAR",
+        "items": ["SEBZE ÇORBASI", "IZGARA KANAT", "BULGUR PİLAVI", "SALATABAR"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-15T12:00:00.000Z",
+        "dateStr": "15 Ekim 2026 Perşembe",
+        "dayName": "Perşembe",
+        "mealText": "DÜĞÜN ÇORBASI, KURU FASULYE, PİLAV, SALATABAR, MEYVE",
+        "items": ["DÜĞÜN ÇORBASI", "KURU FASULYE", "PİLAV", "SALATABAR", "MEYVE"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-16T12:00:00.000Z",
+        "dateStr": "16 Ekim 2026 Cuma",
+        "dayName": "Cuma",
+        "mealText": "ŞEHRİYE ÇORBASI, KÖFTE, PATATES BİBER KIZARTMA, SALATABAR",
+        "items": ["ŞEHRİYE ÇORBASI", "KÖFTE", "PATATES BİBER KIZARTMA", "SALATABAR"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-17T12:00:00.000Z",
+        "dateStr": "17 Ekim 2026 Cumartesi",
+        "dayName": "Cumartesi",
+        "mealText": "CİĞER",
+        "items": ["CİĞER"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-19T12:00:00.000Z",
+        "dateStr": "19 Ekim 2026 Pazartesi",
+        "dayName": "Pazartesi",
+        "mealText": "HAVUÇ ÇORBASI, ANKARA TAVA, SALATABAR, MEYVE",
+        "items": ["HAVUÇ ÇORBASI", "ANKARA TAVA", "SALATABAR", "MEYVE"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-20T12:00:00.000Z",
+        "dateStr": "20 Ekim 2026 Salı",
+        "dayName": "Salı",
+        "mealText": "YAYLA ÇORBASI, BEZELYE YEMEĞİ, PİLAV, SALATABAR",
+        "items": ["YAYLA ÇORBASI", "BEZELYE YEMEĞİ", "PİLAV", "SALATABAR"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-21T12:00:00.000Z",
+        "dateStr": "21 Ekim 2026 Çarşamba",
+        "dayName": "Çarşamba",
+        "mealText": "EZOGELİN ÇORBASI, TAVUK ÇÖPŞİŞ, ERİŞTE, SALATABAR",
+        "items": ["EZOGELİN ÇORBASI", "TAVUK ÇÖPŞİŞ", "ERİŞTE", "SALATABAR"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-22T12:00:00.000Z",
+        "dateStr": "22 Ekim 2026 Perşembe",
+        "dayName": "Perşembe",
+        "mealText": "TANDIR ÇORBASI, KARNIYARIK, PİLAV, SALATABAR, KAZANDİBİ",
+        "items": ["TANDIR ÇORBASI", "KARNIYARIK", "PİLAV", "SALATABAR", "KAZANDİBİ"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-23T12:00:00.000Z",
+        "dateStr": "23 Ekim 2026 Cuma",
+        "dayName": "Cuma",
+        "mealText": "DOMATES ÇORBASI, ISPANAK YEMEĞİ, PEYNİRLİ MAKARNA, SALATABAR",
+        "items": ["DOMATES ÇORBASI", "ISPANAK YEMEĞİ", "PEYNİRLİ MAKARNA", "SALATABAR"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-24T12:00:00.000Z",
+        "dateStr": "24 Ekim 2026 Cumartesi",
+        "dayName": "Cumartesi",
+        "mealText": "PİDE, AYRAN",
+        "items": ["PİDE", "AYRAN"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-26T12:00:00.000Z",
+        "dateStr": "26 Ekim 2026 Pazartesi",
+        "dayName": "Pazartesi",
+        "mealText": "TARHANA ÇORBASI, ÇÖKERTME KEBABI, SPAGETTİ, SALATABAR",
+        "items": ["TARHANA ÇORBASI", "ÇÖKERTME KEBABI", "SPAGETTİ", "SALATABAR"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-27T12:00:00.000Z",
+        "dateStr": "27 Ekim 2026 Salı",
+        "dayName": "Salı",
+        "mealText": "DÜĞÜN ÇORBASI, BARBUNYA YEMEĞİ, PATATESLİ KOL BÖREĞİ, SALATABAR",
+        "items": ["DÜĞÜN ÇORBASI", "BARBUNYA YEMEĞİ", "PATATESLİ KOL BÖREĞİ", "SALATABAR"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-28T12:00:00.000Z",
+        "dateStr": "28 Ekim 2026 Çarşamba",
+        "dayName": "Çarşamba",
+        "mealText": "MERCİMEK ÇORBASI, MANTAR SOTE, BULGUR PİLAVI, SALATABAR, TİRAMİSU",
+        "items": ["MERCİMEK ÇORBASI", "MANTAR SOTE", "BULGUR PİLAVI", "SALATABAR", "TİRAMİSU"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-29T12:00:00.000Z",
+        "dateStr": "29 Ekim 2026 Perşembe",
+        "dayName": "Perşembe",
+        "mealText": "MISIR ÇORBASI, ARNAVUT CİĞERİ, PİLAV, SALATABAR",
+        "items": ["MISIR ÇORBASI", "ARNAVUT CİĞERİ", "PİLAV", "SALATABAR"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-30T12:00:00.000Z",
+        "dateStr": "30 Ekim 2026 Cuma",
+        "dayName": "Cuma",
+        "mealText": "YEŞİL MERCİMEK ÇORBASI, MEVSİM TÜRLÜ, YOĞURTLU MAKARNA, SALATABAR, MEYVE",
+        "items": ["YEŞİL MERCİMEK ÇORBASI", "MEVSİM TÜRLÜ", "YOĞURTLU MAKARNA", "SALATABAR", "MEYVE"],
+        "isHoliday": false
+      },
+      {
+        "date": "2026-10-31T12:00:00.000Z",
+        "dateStr": "31 Ekim 2026 Cumartesi",
+        "dayName": "Cumartesi",
+        "mealText": "FIRIN TAVUK, PİLAV",
+        "items": ["FIRIN TAVUK", "PİLAV"],
+        "isHoliday": false
+      }
+    ]
+  },
+  {
+    "year": 2026,
     "month": 11,
     "monthName": "Kasım 2026",
     "entries": [
@@ -1676,12 +1899,11 @@ export async function ensureDatabaseSeeded(client?: any) {
       }
       console.log('Tüm yemekler başarıyla aktarıldı.');
     } else {
-      // Yalnızca veritabanında henüz bulunmayan ilk başlangıç yemeklerini ekle (Kullanıcının mevcut verilerini ve fotoğraflarını ASLA ezme!)
+      // Tek sorguda mevcut yemek isimlerini çekerek hızlıca eksikleri tamamla
+      const existingDbMeals = await db.meal.findMany({ select: { name: true } });
+      const existingNameSet = new Set(existingDbMeals.map((m: any) => m.name.trim().toLowerCase()));
       for (const meal of INITIAL_MEALS) {
-        const existing = await db.meal.findFirst({
-          where: { name: meal.name },
-        });
-        if (!existing) {
+        if (!existingNameSet.has(meal.name.trim().toLowerCase())) {
           await db.meal.create({
             data: {
               name: meal.name,
@@ -1690,6 +1912,7 @@ export async function ensureDatabaseSeeded(client?: any) {
               imageUrl: meal.imageUrl,
             },
           });
+          existingNameSet.add(meal.name.trim().toLowerCase());
         }
       }
     }

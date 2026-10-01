@@ -254,8 +254,8 @@ interface ApprovedMonthPlan {
 export default function AdminListelerPage() {
   const [activeTab, setActiveTab] = useState<'monthly' | 'wizard'>('monthly');
 
-  const [selectedYear, setSelectedYear] = useState<number>(2026);
-  const [selectedMonth, setSelectedMonth] = useState<number>(9); // Eylül
+  const [selectedYear, setSelectedYear] = useState<number>(() => new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(() => new Date().getMonth() + 1);
 
   const [approvedPlans, setApprovedPlans] = useState<ApprovedMonthPlan[]>([]);
   const [monthlyEntries, setMonthlyEntries] = useState<MonthlyDailyEntry[]>([]);
