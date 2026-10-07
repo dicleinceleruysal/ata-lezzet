@@ -98,16 +98,19 @@ export default function AdminNotlarPage() {
       {/* Üst Başlık & Butonlar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
               Kullanıcı Notları & Geri Bildirimler
             </h1>
+            <span className="px-3 py-0.5 rounded-full bg-amber-500 text-white text-xs font-black shadow-xs">
+              Ekim 2026
+            </span>
             <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">
-              {notes.length} Toplam
+              {notes.length} Bu Ay
             </span>
           </div>
           <p className="text-sm text-stone-500 mt-1">
-            Kullanıcıların ana sayfadan gönderdiği öneri, istek ve değerlendirmeler.
+            Kullanıcıların bu ay ana sayfadan gönderdiği öneri, istek ve değerlendirmeler.
           </p>
         </div>
 
@@ -126,6 +129,15 @@ export default function AdminNotlarPage() {
           >
             🏠 Ana Sayfayı Aç
           </Link>
+        </div>
+      </div>
+
+      {/* Aylık Döngü Bilgilendirme Notu */}
+      <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 text-xs sm:text-sm text-amber-900 flex items-start sm:items-center gap-2.5">
+        <span className="text-lg">💡</span>
+        <div className="flex-1">
+          <strong>Aylık Döngü Kuralı:</strong> Yorumlar ay bazlı tutulur. Bu sayfada sadece içinde bulunduğumuz{' '}
+          <strong className="underline underline-offset-2">Ekim 2026</strong> dönemine ait geri bildirimler listelenir. Önceki aylara ait yorumlar otomatik olarak temizlenmiştir.
         </div>
       </div>
 

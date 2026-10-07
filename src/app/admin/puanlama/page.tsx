@@ -38,49 +38,25 @@ interface RatingResponse {
 
 export default function AdminPuanlamaPage() {
   const [data, setData] = useState<RatingResponse | null>(null);
-  const [dishRatings, setDishRatings] = useState<{ dishName: string; average: number; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'dishes' | 'days' | 'votes'>('dishes');
+  const [activeTab, setActiveTab] = useState<'days' | 'votes'>('days');
 
   const fetchRatings = async () => {
     try {
       setLoading(true);
       setError(null);
-      const [res, dishRes] = await Promise.all([
-        fetch('/api/ratings?admin=true', { cache: 'no-store' }),
-        fetch('/api/ratings/dish?summary=true', { cache: 'no-store' }),
-      ]);
+      const res = await fetch('/api/ratings?admin=true', { cache: 'no-store' });
       if (!res.ok) throw new Error('Puanlar yüklenemedi.');
       const json = await res.json();
       setData(json);
-
-      if (dishRes.ok) {
-        const dishJson = await dishRes.json();
-        if (dishJson.success && Array.isArray(dishJson.dishes)) {
-          setDishRatings(dishJson.dishes);
-        }
-      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Bir hata oluştu.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleResetDishRating = async (dishName: string) => {
-    if (!confirm(`"${dishName}" yemeğine ait tüm puanları sıfırlamak istediğinize emin misiniz?`)) return;
-    try {
-      const res = await fetch(`/api/ratings/dish?dishName=${encodeURIComponent(dishName)}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Yemek puanları silinemedi.');
-      fetchRatings();
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Hata oluştu.');
     }
   };
 
@@ -89,7 +65,7 @@ export default function AdminPuanlamaPage() {
   }, []);
 
   const handleDeleteVote = async (id: string) => {
-    if (!confirm('Bu tekil puanı silmek istediğinize emin misiniz?')) return;
+    if (!confirm('Bu tekil menü puanını silmek istediğinize emin misiniz?')) return;
     setDeletingId(id);
     try {
       const res = await fetch(`/api/ratings?id=${encodeURIComponent(id)}`, {
@@ -126,12 +102,18 @@ export default function AdminPuanlamaPage() {
     }
     setIsResetting(true);
     try {
-      const res = await fetch('/api/ratings?resetAll=true', {
+      const yearParam = data?.currentMonth?.year;
+      const monthParam = data?.currentMonth?.month;
+      const query = yearParam && monthParam
+        ? `/api/ratings?resetAll=true&year=${yearParam}&month=${monthParam}`
+        : '/api/ratings?resetAll=true';
+
+      const res = await fetch(query, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Puanlamalar sıfırlanamadı.');
       await fetchRatings();
-      alert('Tüm puanlamalar başarıyla sıfırlandı.');
+      alert(`${monthTitle} menü puanlamaları başarıyla sıfırlandı.`);
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Sıfırlama sırasında hata oluştu.');
     } finally {
@@ -151,12 +133,6 @@ export default function AdminPuanlamaPage() {
       : v.dateStr.toLowerCase().includes(searchTerm.toLowerCase().trim())
   );
 
-  const filteredDishes = dishRatings.filter((d) =>
-    searchTerm.trim() === ''
-      ? true
-      : d.dishName.toLowerCase().includes(searchTerm.toLowerCase().trim())
-  );
-
   return (
     <div className="space-y-6">
       {/* Üst Başlık & Butonlar */}
@@ -164,7 +140,7 @@ export default function AdminPuanlamaPage() {
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight flex items-center gap-2">
-              <span>⭐</span> Menü Puanlamaları & Notlar
+              <span>⭐</span> Menü Puanlamaları
             </h1>
             <span className="px-3 py-0.5 rounded-full bg-amber-500 text-white text-xs font-black shadow-xs">
               {data?.currentMonth?.monthName || 'Bu Ay'}
@@ -174,7 +150,7 @@ export default function AdminPuanlamaPage() {
             </span>
           </div>
           <p className="text-sm text-stone-500 mt-1">
-            Kullanıcıların günün menüsüne 5 yıldız üzerinden verdiği puan ve değerlendirmeler.
+            Kullanıcıların bu ay günün menüsüne 5 yıldız üzerinden verdiği puan ve değerlendirmeler.
           </p>
         </div>
 
@@ -183,7 +159,7 @@ export default function AdminPuanlamaPage() {
             onClick={handleResetAllCurrentMonth}
             disabled={isResetting || (data?.stats.totalVotes || 0) === 0}
             className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            title="İçinde bulunulan ayın tüm puanlamalarını sıfırla"
+            title="İçinde bulunulan ayın menü puanlamalarını sıfırla"
           >
             🧹 {isResetting ? 'Sıfırlanıyor...' : 'Ayı Sıfırla'}
           </button>
@@ -207,14 +183,14 @@ export default function AdminPuanlamaPage() {
       {/* Aylık Döngü Bilgilendirme Notu */}
       <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 text-xs sm:text-sm text-amber-900 flex items-start sm:items-center gap-2.5">
         <span className="text-lg">💡</span>
-        <div className="flex-1">
+        <div className="flex-1 leading-relaxed">
           <strong>Aylık Döngü Kuralı:</strong> Bu sayfada sadece içinde bulunduğumuz{' '}
           <strong className="underline underline-offset-2">{data?.currentMonth?.monthName || 'aktif ay'}</strong>{' '}
-          dönemine ait puanlar tutulur. Takvim yeni aya geçtiğinde puanlama sayfası otomatik olarak sıfırlanır ve yeni ayın değerlendirmeleri başlar.
+          dönemine ait gün gün menü puanları listelenir. Bireysel yemek puanlamaları arka planda hafızada tutulmakta ve akıllı menü oluşturucuda yüksek puanlı yemekleri önceliklendirmek için kullanılmaktadır.
         </div>
       </div>
 
-      {/* İstatistik Özet Kartları (Sadece Bu Ay) */}
+      {/* İstatistik Özet Kartları (Sadece Bu Ayın Menü Puanları) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <div className="p-5 rounded-2xl bg-white border border-stone-200 shadow-xs">
           <div className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1.5">
@@ -266,16 +242,6 @@ export default function AdminPuanlamaPage() {
       <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="inline-flex p-1 bg-stone-100 rounded-xl flex-wrap">
           <button
-            onClick={() => setActiveTab('dishes')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'dishes'
-                ? 'bg-white text-stone-900 shadow-xs'
-                : 'text-stone-600 hover:text-stone-900'
-            }`}
-          >
-            🍲 Yemek Puanları ({dishRatings.length})
-          </button>
-          <button
             onClick={() => setActiveTab('days')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               activeTab === 'days'
@@ -283,7 +249,7 @@ export default function AdminPuanlamaPage() {
                 : 'text-stone-600 hover:text-stone-900'
             }`}
           >
-            📅 Gün Gün Özet ({data?.days.length || 0})
+            📅 Gün Gün Menü Puanları ({data?.days.length || 0})
           </button>
           <button
             onClick={() => setActiveTab('votes')}
@@ -293,7 +259,7 @@ export default function AdminPuanlamaPage() {
                 : 'text-stone-600 hover:text-stone-900'
             }`}
           >
-            🗳️ Tüm Oylar ({data?.recentVotes.length || 0})
+            🗳️ Verilen Menü Oyları ({data?.recentVotes.length || 0})
           </button>
         </div>
 
@@ -302,14 +268,14 @@ export default function AdminPuanlamaPage() {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Yemek veya tarihe göre ara..."
+            placeholder="Tarihe veya puana göre ara..."
             className="w-full pl-9 pr-4 py-2 rounded-xl border border-stone-200 bg-stone-50 text-xs focus:outline-none focus:border-amber-500 focus:bg-white transition-all font-medium text-stone-800"
           />
           <span className="absolute left-3 top-2.5 text-stone-400 text-xs">🔍</span>
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-2.5 text-stone-400 hover:text-stone-600 text-xs font-bold"
+              className="absolute right-3 top-2.5 text-stone-400 hover:text-stone-600 text-xs font-bold cursor-pointer"
             >
               ✕
             </button>
@@ -321,7 +287,7 @@ export default function AdminPuanlamaPage() {
       {loading ? (
         <div className="bg-white rounded-2xl p-12 text-center text-stone-500 flex flex-col items-center justify-center gap-3 border border-stone-200">
           <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-semibold">Puanlama verileri yükleniyor...</p>
+          <p className="text-sm font-semibold">Menü puanlama verileri yükleniyor...</p>
         </div>
       ) : error ? (
         <div className="bg-rose-50 p-6 rounded-2xl border border-rose-200 text-rose-800 text-sm font-bold text-center">
@@ -329,107 +295,7 @@ export default function AdminPuanlamaPage() {
         </div>
       ) : (
         <>
-          {/* 1. SEKME: YEMEK PUANLARI VE SIRALAMASI */}
-          {activeTab === 'dishes' && (
-            <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
-              <div className="p-4 sm:p-5 border-b border-stone-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div>
-                  <h3 className="font-black text-stone-900 text-base flex items-center gap-2">
-                    <span>🏆</span> Yemek Memnuniyet Sıralaması ({filteredDishes.length})
-                  </h3>
-                  <p className="text-xs text-stone-500 mt-0.5">
-                    Otomatik menü oluşturulurken bu puanlar temel alınır; yüksek puanlı yemekler daha sık listelenir.
-                  </p>
-                </div>
-                {dishRatings.length > 0 && (
-                  <span className="text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200 px-3 py-1 rounded-xl self-start sm:self-auto">
-                    Toplam {dishRatings.reduce((sum, d) => sum + d.count, 0)} Oy
-                  </span>
-                )}
-              </div>
-
-              {filteredDishes.length === 0 ? (
-                <div className="p-12 text-center text-stone-400 font-bold text-sm">
-                  {searchTerm ? 'Aramanıza uygun oylanmış yemek bulunamadı.' : 'Henüz hiçbir yemek kullanıcılar tarafından puanlanmamış.'}
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs sm:text-sm">
-                    <thead className="bg-stone-50/80 border-b border-stone-200 text-stone-600 font-black uppercase text-[11px] tracking-wider">
-                      <tr>
-                        <th className="py-3.5 px-4 sm:px-6">Sıra & Yemek</th>
-                        <th className="py-3.5 px-4 text-center">Ortalama Puan</th>
-                        <th className="py-3.5 px-4 text-center">Toplam Oy</th>
-                        <th className="py-3.5 px-4 text-center">Durum</th>
-                        <th className="py-3.5 px-4 text-right">İşlem</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-100 font-medium text-stone-800">
-                      {filteredDishes.map((dish, idx) => {
-                        const isTop = dish.average >= 4.5 && dish.count >= 2;
-                        const isLow = dish.average < 3.0 && dish.count >= 2;
-
-                        return (
-                          <tr key={dish.dishName} className="hover:bg-amber-50/40 transition-colors">
-                            <td className="py-3.5 px-4 sm:px-6 font-bold flex items-center gap-3">
-                              <span
-                                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
-                                  idx === 0
-                                    ? 'bg-amber-400 text-white shadow-xs'
-                                    : idx === 1
-                                    ? 'bg-stone-300 text-stone-800'
-                                    : idx === 2
-                                    ? 'bg-amber-700 text-white'
-                                    : 'bg-stone-100 text-stone-500'
-                                }`}
-                              >
-                                {idx + 1}
-                              </span>
-                              <span className="text-stone-900 text-sm font-black">{dish.dishName}</span>
-                            </td>
-                            <td className="py-3.5 px-4 text-center">
-                              <div className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg font-black text-amber-900">
-                                <span>⭐</span>
-                                <span>{dish.average.toFixed(1)}</span>
-                              </div>
-                            </td>
-                            <td className="py-3.5 px-4 text-center font-bold text-stone-600">
-                              {dish.count} oy
-                            </td>
-                            <td className="py-3.5 px-4 text-center">
-                              {isTop ? (
-                                <span className="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-black border border-emerald-300">
-                                  🏆 En Sevilen
-                                </span>
-                              ) : isLow ? (
-                                <span className="px-2.5 py-1 rounded-full bg-rose-100 text-rose-900 text-[10px] font-black border border-rose-300">
-                                  ⚠️ Düşük Puan
-                                </span>
-                              ) : (
-                                <span className="px-2.5 py-1 rounded-full bg-stone-100 text-stone-600 text-[10px] font-bold border border-stone-200">
-                                  👍 Beğenilen
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-4 text-right">
-                              <button
-                                onClick={() => handleResetDishRating(dish.dishName)}
-                                className="px-2.5 py-1 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 cursor-pointer transition-colors"
-                              >
-                                Sıfırla
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* 2. SEKME: GÜN GÜN ÖZET */}
+          {/* 1. SEKME: GÜN GÜN MENÜ PUANLARI */}
           {activeTab === 'days' && (
             <div className="space-y-4">
               {filteredDays.length === 0 ? (
@@ -441,7 +307,7 @@ export default function AdminPuanlamaPage() {
                       : `${data?.currentMonth?.monthName || 'Bu ay'} için henüz menü puanlanmamış.`}
                   </p>
                   <p className="text-xs text-stone-400 max-w-md mx-auto">
-                    Kullanıcılar ana sayfada günün menüsünün altındaki 5 yıldızlı alandan not verdikçe bu ayın ortalamaları burada anlık olarak listelenecektir.
+                    Kullanıcılar ana sayfada günün menüsünün altındaki 5 yıldızlı alandan oy verdikçe bu ayın ortalamaları burada anlık olarak listelenecektir.
                   </p>
                 </div>
               ) : (
@@ -520,7 +386,7 @@ export default function AdminPuanlamaPage() {
             </div>
           )}
 
-          {/* 2. SEKME: TÜM OYLARIN LİSTESİ */}
+          {/* 2. SEKME: VERİLEN MENÜ OYLARI */}
           {activeTab === 'votes' && (
             <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs">
               {filteredVotes.length === 0 ? (

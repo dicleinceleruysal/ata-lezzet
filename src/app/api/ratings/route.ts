@@ -16,19 +16,28 @@ export async function GET(request: Request) {
     const userId = searchParams.get('userId');
     const isAdmin = searchParams.get('admin') === 'true';
 
-    const now = new Date();
+    const nowTurkey = new Date(Date.now() + 3 * 3600 * 1000);
     const activeYear = searchParams.get('year')
       ? parseInt(searchParams.get('year')!, 10)
-      : now.getFullYear();
+      : nowTurkey.getUTCFullYear();
     const activeMonth = searchParams.get('month')
       ? parseInt(searchParams.get('month')!, 10)
-      : now.getMonth() + 1; // 1-12
+      : nowTurkey.getUTCMonth() + 1; // 1-12
 
     const monthName = `${MONTH_NAMES[activeMonth - 1]} ${activeYear}`;
+    const targetMonthText = MONTH_NAMES[activeMonth - 1];
+    const startOfMonth = new Date(Date.UTC(activeYear, activeMonth - 1, 1, 0, 0, 0));
+    const endOfMonth = new Date(Date.UTC(activeYear, activeMonth, 1, 0, 0, 0));
 
-    // 1. YÖNETİCİ GÖRÜNÜMÜ
+    // 1. YÖNETİCİ GÖRÜNÜMÜ (Sadece seçili aya ait menü puanları)
     if (isAdmin) {
       const allRatings = await prisma.menuRating.findMany({
+        where: {
+          OR: [
+            { dateStr: { contains: targetMonthText } },
+            { createdAt: { gte: startOfMonth, lt: endOfMonth } },
+          ],
+        },
         orderBy: { createdAt: 'desc' },
       });
 
@@ -292,8 +301,32 @@ export async function DELETE(request: Request) {
     const dateStr = searchParams.get('dateStr');
     const resetAll = searchParams.get('resetAll') === 'true';
 
-    // Tüm puanlamaları tamamen sıfırla
+    // Puanlamaları sıfırla (Belirli ay veya tümü)
     if (resetAll) {
+      const targetMonth = searchParams.get('month');
+      const targetYear = searchParams.get('year');
+
+      if (targetMonth && targetYear) {
+        const m = parseInt(targetMonth, 10);
+        const y = parseInt(targetYear, 10);
+        const monthText = MONTH_NAMES[m - 1];
+        const startM = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0));
+        const endM = new Date(Date.UTC(y, m, 1, 0, 0, 0));
+
+        await prisma.menuRating.deleteMany({
+          where: {
+            OR: [
+              { dateStr: { contains: monthText } },
+              { createdAt: { gte: startM, lt: endM } },
+            ],
+          },
+        });
+        return NextResponse.json({
+          success: true,
+          message: `${monthText} ${y} ayı menü puanları başarıyla sıfırlandı.`,
+        });
+      }
+
       await prisma.menuRating.deleteMany({});
       return NextResponse.json({
         success: true,

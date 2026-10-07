@@ -9,7 +9,52 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     const limit = searchParams.get('limit');
 
-    const whereClause: { status?: string } = {};
+    // Türkiye saati (UTC+3)
+    const nowTurkey = new Date(Date.now() + 3 * 3600 * 1000);
+    const curYear = nowTurkey.getUTCFullYear();
+    const curMonth = nowTurkey.getUTCMonth(); // 0-indexed
+
+    // Ay başı (Önceki ayların başlangıcı)
+    const startOfCurrentMonth = new Date(Date.UTC(curYear, curMonth, 1, 0, 0, 0));
+
+    // Otomatik Temizlik: Önceki aylara ait yorumları veritabanından sil
+    try {
+      await prisma.userNote.deleteMany({
+        where: {
+          createdAt: {
+            lt: startOfCurrentMonth,
+          },
+        },
+      });
+    } catch (cleanErr) {
+      console.warn('Önceki ay yorumları temizlenirken uyarı:', cleanErr);
+    }
+
+    // İstenen yıl ve ay (varsayılan: bu ay)
+    const activeYear = searchParams.get('year')
+      ? parseInt(searchParams.get('year')!, 10)
+      : curYear;
+    const activeMonth = searchParams.get('month')
+      ? parseInt(searchParams.get('month')!, 10)
+      : curMonth + 1; // 1-indexed
+
+    const startOfSelectedMonth = new Date(Date.UTC(activeYear, activeMonth - 1, 1, 0, 0, 0));
+    const endOfSelectedMonth = new Date(Date.UTC(activeYear, activeMonth, 1, 0, 0, 0));
+
+    // Sadece seçili aya ait yorumları filtrele
+    const whereClause: {
+      status?: string;
+      createdAt?: {
+        gte: Date;
+        lt: Date;
+      };
+    } = {
+      createdAt: {
+        gte: startOfSelectedMonth,
+        lt: endOfSelectedMonth,
+      },
+    };
+
     if (status && status !== 'all') {
       whereClause.status = status;
     }
@@ -107,6 +152,27 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+
+    // Özel İşlem: Önceki aylara ait tüm yorumları manuel silme
+    if (searchParams.get('clearPrevious') === 'true') {
+      const nowTurkey = new Date(Date.now() + 3 * 3600 * 1000);
+      const startOfCurrentMonth = new Date(
+        Date.UTC(nowTurkey.getUTCFullYear(), nowTurkey.getUTCMonth(), 1, 0, 0, 0)
+      );
+      const res = await prisma.userNote.deleteMany({
+        where: {
+          createdAt: {
+            lt: startOfCurrentMonth,
+          },
+        },
+      });
+      return NextResponse.json({
+        success: true,
+        message: `${res.count} adet önceki ay yorumu silindi.`,
+        deletedCount: res.count,
+      });
+    }
+
     let id = searchParams.get('id');
 
     if (!id) {
