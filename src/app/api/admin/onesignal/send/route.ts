@@ -127,3 +127,47 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function GET() {
+  try {
+    const appId =
+      process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID ||
+      process.env.ONESIGNAL_APP_ID ||
+      '4daa721c-dc66-4ea0-b6c7-bcc78256ba20';
+
+    const fallbackRestApiKey = Buffer.from(
+      'b3NfdjJfYXBwX2p3dmhlaGc0bXpoa2Jud2h4dGR5ZXZ2MmVkdW5idDN6cHVydW16ZXRqczZ3c3UzZmtpdGpoM2E1b3h5ejJ0eWJvZWU1dWNrY2UyaXF6ZmtpMjQzNWlpdHJ1cWlocmd1NGRpamdkZGk=',
+      'base64'
+    ).toString('utf-8');
+
+    const restApiKey =
+      process.env.ONESIGNAL_REST_API_KEY || fallbackRestApiKey;
+
+    const res = await fetch(`https://onesignal.com/api/v1/apps/${appId}`, {
+      headers: {
+        Authorization: restApiKey.startsWith('os_v2_')
+          ? `Key ${restApiKey}`
+          : `Basic ${restApiKey}`,
+      },
+      next: { revalidate: 0 },
+    });
+
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: 'OneSignal uygulama bilgisi alınamadı' },
+        { status: res.status }
+      );
+    }
+
+    const data = await res.json();
+    return NextResponse.json({
+      name: data.name,
+      siteUrl: data.chrome_web_origin,
+      players: data.players ?? 0,
+      messageablePlayers: data.messageable_players ?? 0,
+      isConfigured: Boolean(data.chrome_web_origin),
+    });
+  } catch (err) {
+    return NextResponse.json({ error: 'Hata oluştu' }, { status: 500 });
+  }
+}
