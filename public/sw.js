@@ -1,5 +1,8 @@
+// OneSignal Web Push Entegrasyonu
+importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
+
 // Ata Lezzet PWA Service Worker
-const CACHE_NAME = 'ata-lezzet-v1.6.1';
+const CACHE_NAME = 'ata-lezzet-v1.6.2';
 
 const PRECACHE_ASSETS = [
   '/',
