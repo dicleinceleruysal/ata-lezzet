@@ -81,6 +81,26 @@ export default function PwaRegister() {
       if (choice.outcome === 'accepted') {
         setShowPrompt(false);
         setDeferredPrompt(null);
+
+        // Uygulamayı yükleyen kullanıcıdan bildirim iznini hemen isteyip OneSignal'a bağlayalım
+        setTimeout(async () => {
+          if (
+            typeof window !== 'undefined' &&
+            'Notification' in window &&
+            Notification.permission === 'default'
+          ) {
+            try {
+              const res = await Notification.requestPermission();
+              if (res === 'granted' && window.OneSignalDeferred) {
+                window.OneSignalDeferred.push(async (OneSignal: any) => {
+                  await OneSignal?.User?.PushSubscription?.optIn().catch(() => {});
+                });
+              }
+            } catch {
+              // Sessiz devam et
+            }
+          }
+        }, 1200);
       }
     } else if (isIos) {
       // iOS için rehber aç

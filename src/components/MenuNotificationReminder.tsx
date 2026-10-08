@@ -146,9 +146,17 @@ export default function MenuNotificationReminder() {
       setEnabled(savedEnabled === 'true');
     }
 
-    // İzin henüz sorulmadıysa nazik bir bilgi için
+    // Uygulama yüklü moddaysa (PWA) veya izin henüz sorulmadıysa nazikçe izin iste
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
     const dismissedPrompt = localStorage.getItem('menu_reminder_prompt_dismissed');
-    if (!dismissedPrompt && 'Notification' in window && Notification.permission === 'default') {
+
+    if (
+      'Notification' in window &&
+      Notification.permission === 'default' &&
+      (isStandalone || !dismissedPrompt)
+    ) {
       setAutoPromptDismissed(false);
     }
 
