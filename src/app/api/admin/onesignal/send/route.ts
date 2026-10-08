@@ -87,6 +87,8 @@ export async function POST(request: Request) {
         url: targetUrl,
         chrome_web_icon: `${siteBase}/icons/icon-192.png`,
         firefox_icon: `${siteBase}/icons/icon-192.png`,
+        priority: 10,
+        ttl: 86400,
       }),
     });
 
