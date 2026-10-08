@@ -27,11 +27,36 @@ export default function OneSignalInit() {
           },
         });
 
-        // Tarayıcıda bildirim izni zaten verilmişse OneSignal abonesi olarak kaydet
-        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-          if (OneSignal?.User?.PushSubscription) {
-            await OneSignal.User.PushSubscription.optIn().catch(() => {});
+        // 1. Tarayıcıda bildirim izni zaten verilmişse OneSignal abonesi olarak anında ve sessizce kaydet
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+          if (Notification.permission === 'granted') {
+            if (OneSignal?.User?.PushSubscription) {
+              await OneSignal.User.PushSubscription.optIn().catch(() => {});
+            }
+          } else if (Notification.permission === 'default') {
+            // İzin henüz verilmemişse kullanıcıya otomatik izin istemi çıkart
+            try {
+              if (OneSignal?.Slidedown?.promptPush) {
+                await OneSignal.Slidedown.promptPush().catch(() => {});
+              }
+            } catch {
+              // Sessizce devam et
+            }
           }
+
+          // İlk kullanıcı dokunuşunda (touch/click) aboneliği tekrar garantiye al
+          const syncOnTouch = async () => {
+            try {
+              if (Notification.permission === 'granted') {
+                await OneSignal?.User?.PushSubscription?.optIn().catch(() => {});
+              }
+            } finally {
+              window.removeEventListener('click', syncOnTouch);
+              window.removeEventListener('touchstart', syncOnTouch);
+            }
+          };
+          window.addEventListener('click', syncOnTouch, { once: true });
+          window.addEventListener('touchstart', syncOnTouch, { once: true });
         }
       } catch (err) {
         console.warn('[OneSignal] Başlatma sırasında hata:', err);
