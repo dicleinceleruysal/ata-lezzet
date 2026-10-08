@@ -79,9 +79,14 @@ export default function OneSignalBroadcastCard() {
         throw new Error(data.error || 'Bildirim gönderilemedi.');
       }
 
+      const count =
+        data.recipients && data.recipients > 0
+          ? `${data.recipients} kişiye iletildi`
+          : `${appInfo?.players || 'Tüm'} aboneye iletildi`;
+
       setResult({
         success: true,
-        text: `✓ Bildirim başarıyla gönderildi! (${data.recipients || 0} kişiye iletildi)`,
+        text: `✓ Bildirim başarıyla iletildi! (${count})`,
         details: data.notificationId ? `OneSignal ID: ${data.notificationId}` : undefined,
       });
 

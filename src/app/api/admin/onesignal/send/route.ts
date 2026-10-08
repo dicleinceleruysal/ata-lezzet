@@ -53,9 +53,16 @@ export async function POST(request: Request) {
       : 'Ata Lezzet - Günün Menüsü 🍽️';
 
     const contentText = message.trim();
-    const targetUrl = (url && typeof url === 'string' && url.trim())
-      ? url.trim()
-      : 'https://atalezzet.com';
+    const siteBase = 'https://ata-lezzet.vercel.app';
+    let targetUrl = siteBase;
+    if (url && typeof url === 'string' && url.trim()) {
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        targetUrl = url.trim();
+      } else {
+        const cleanPath = url.trim().startsWith('/') ? url.trim() : `/${url.trim()}`;
+        targetUrl = `${siteBase}${cleanPath}`;
+      }
+    }
 
     // OneSignal REST API v1
     const oneSignalResponse = await fetch('https://onesignal.com/api/v1/notifications', {
@@ -78,8 +85,8 @@ export async function POST(request: Request) {
           en: contentText,
         },
         url: targetUrl,
-        chrome_web_icon: '/icons/icon-192.png',
-        chrome_web_badge: '/icons/icon-192.png',
+        chrome_web_icon: `${siteBase}/icons/icon-192.png`,
+        chrome_web_badge: `${siteBase}/icons/icon-192.png`,
       }),
     });
 
@@ -95,14 +102,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const hasNoRecipients = !result.recipients || result.recipients === 0;
     const isNoSubscribersError =
       Array.isArray(result.errors) &&
       result.errors.some((e: string) =>
         e.toLowerCase().includes('not subscribed')
       );
 
-    if (isNoSubscribersError || (result.errors && hasNoRecipients)) {
+    if (isNoSubscribersError) {
       return NextResponse.json({
         success: false,
         warning: true,
@@ -113,10 +119,38 @@ export async function POST(request: Request) {
       });
     }
 
+    // OneSignal arka planda iletimi tamamlayıp istatistiği oluşturana kadar 1 sn bekleyip gerçek alıcı sayısını çekelim
+    let actualRecipients = result.recipients;
+    if (result.id && (actualRecipients === undefined || actualRecipients === 0)) {
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const detailRes = await fetch(
+          `https://onesignal.com/api/v1/notifications/${result.id}?app_id=${appId}`,
+          {
+            headers: {
+              Authorization: restApiKey.startsWith('os_v2_')
+                ? `Key ${restApiKey}`
+                : `Basic ${restApiKey}`,
+            },
+          }
+        );
+        if (detailRes.ok) {
+          const detail = await detailRes.json();
+          actualRecipients =
+            detail.successful ??
+            detail.platform_delivery_stats?.chrome_web_push?.successful ??
+            detail.recipients ??
+            0;
+        }
+      } catch {
+        // Hata durumunda eldeki veriyi kullan
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: 'OneSignal bildirimi tüm kullanıcılara başarıyla iletildi!',
-      recipients: result.recipients || 0,
+      recipients: actualRecipients ?? 0,
       notificationId: result.id,
     });
   } catch (error) {
