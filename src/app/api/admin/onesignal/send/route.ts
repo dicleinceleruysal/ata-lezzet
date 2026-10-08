@@ -86,7 +86,7 @@ export async function POST(request: Request) {
         },
         url: targetUrl,
         chrome_web_icon: `${siteBase}/icons/icon-192.png`,
-        chrome_web_badge: `${siteBase}/icons/icon-192.png`,
+        firefox_icon: `${siteBase}/icons/icon-192.png`,
       }),
     });
 

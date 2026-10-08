@@ -66,7 +66,6 @@ export default function MenuNotificationReminder() {
             title,
             body,
             icon: '/icons/icon-192.png',
-            badge: '/icons/icon-192.png',
             data: { url: '/' },
           });
         } else if ('serviceWorker' in navigator) {
@@ -74,7 +73,6 @@ export default function MenuNotificationReminder() {
             reg.showNotification(title, {
               body,
               icon: '/icons/icon-192.png',
-              badge: '/icons/icon-192.png',
               tag: 'daily-menu-reminder',
               data: { url: '/' },
             } as NotificationOptions);
