@@ -26,6 +26,13 @@ export default function OneSignalInit() {
             enable: false, // Kendi özel bildirim butonumuzu kullandığımız için varsayılan zili gizle
           },
         });
+
+        // Tarayıcıda bildirim izni zaten verilmişse OneSignal abonesi olarak kaydet
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          if (OneSignal?.User?.PushSubscription) {
+            await OneSignal.User.PushSubscription.optIn().catch(() => {});
+          }
+        }
       } catch (err) {
         console.warn('[OneSignal] Başlatma sırasında hata:', err);
       }

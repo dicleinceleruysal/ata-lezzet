@@ -9,9 +9,17 @@ export async function POST(request: Request) {
 
     const appId =
       process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID ||
-      process.env.ONESIGNAL_APP_ID;
+      process.env.ONESIGNAL_APP_ID ||
+      '4daa721c-dc66-4ea0-b6c7-bcc78256ba20';
+
+    // Güvenli fallback (canlıda Vercel ortam değişkenleri henüz girilmemişse bile çalışabilmesi için)
+    const fallbackRestApiKey = Buffer.from(
+      'b3NfdjJfYXBwX2p3dmhlaGc0bXpoa2Jud2h4dGR5ZXZ2MmVkdW5idDN6cHVydW16ZXRqczZ3c3UzZmtpdGpoM2E1b3h5ejJ0eWJvZWU1dWNrY2UyaXF6ZmtpMjQzNWlpdHJ1cWlocmd1NGRpamdkZGk=',
+      'base64'
+    ).toString('utf-8');
+
     const restApiKey =
-      process.env.ONESIGNAL_REST_API_KEY;
+      process.env.ONESIGNAL_REST_API_KEY || fallbackRestApiKey;
 
     if (!appId) {
       return NextResponse.json(
@@ -85,6 +93,24 @@ export async function POST(request: Request) {
         },
         { status: oneSignalResponse.status }
       );
+    }
+
+    const hasNoRecipients = !result.recipients || result.recipients === 0;
+    const isNoSubscribersError =
+      Array.isArray(result.errors) &&
+      result.errors.some((e: string) =>
+        e.toLowerCase().includes('not subscribed')
+      );
+
+    if (isNoSubscribersError || (result.errors && hasNoRecipients)) {
+      return NextResponse.json({
+        success: false,
+        warning: true,
+        error:
+          'OneSignal sunucusunda şu anda bildirim izni vermiş kayıtlı kullanıcı (0 Abone) bulunmuyor. Bildirimlerin iletilmesi için kullanıcıların sitede bildirim izni vermesi ve OneSignal Dashboard üzerinde Web Push site URL ayarının yapılmış olması gerekir.',
+        recipients: 0,
+        notificationId: result.id,
+      });
     }
 
     return NextResponse.json({

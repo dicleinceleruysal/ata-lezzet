@@ -42,7 +42,7 @@ export default function OneSignalBroadcastCard() {
 
       const data = await res.json();
 
-      if (!res.ok) {
+      if (!res.ok || data.success === false) {
         throw new Error(data.error || 'Bildirim gönderilemedi.');
       }
 
