@@ -2,6 +2,8 @@ import React from 'react';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 
+import OneSignalBroadcastCard from '@/components/admin/OneSignalBroadcastCard';
+
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
@@ -162,6 +164,9 @@ export default async function AdminDashboard() {
           </p>
         </Link>
       </div>
+
+      {/* OneSignal Bildirim Gönderici */}
+      <OneSignalBroadcastCard />
 
       {/* Hızlı Başlangıç Rehberi */}
       <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-amber-900 space-y-2">

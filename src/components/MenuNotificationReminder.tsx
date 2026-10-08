@@ -199,6 +199,17 @@ export default function MenuNotificationReminder() {
         localStorage.setItem('menu_reminder_enabled', 'true');
         setEnabled(true);
         scheduleNextReminder();
+
+        // OneSignal Web Push aboneliğini senkronize et
+        if (typeof window !== 'undefined' && window.OneSignalDeferred) {
+          window.OneSignalDeferred.push(async (OneSignal: any) => {
+            try {
+              await OneSignal.User.PushSubscription.optIn();
+            } catch (e) {
+              console.warn('[OneSignal] optIn hatası:', e);
+            }
+          });
+        }
       }
     } catch (err) {
       console.warn('İzin istenirken hata:', err);
@@ -212,6 +223,21 @@ export default function MenuNotificationReminder() {
       scheduleNextReminder();
     } else if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
+    }
+
+    // OneSignal Push abonelik durumunu güncelle
+    if (typeof window !== 'undefined' && window.OneSignalDeferred) {
+      window.OneSignalDeferred.push(async (OneSignal: any) => {
+        try {
+          if (val) {
+            await OneSignal.User.PushSubscription.optIn();
+          } else {
+            await OneSignal.User.PushSubscription.optOut();
+          }
+        } catch (e) {
+          console.warn('[OneSignal] push subscription güncelleme hatası:', e);
+        }
+      });
     }
   };
 
