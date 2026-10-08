@@ -12,14 +12,9 @@ declare global {
 
 export default function OneSignalInit() {
   useEffect(() => {
-    const appId = process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
-    if (!appId) {
-      // Henüz App ID girilmediyse konsolda bilgilendir
-      console.info(
-        '[OneSignal] NEXT_PUBLIC_ONESIGNAL_APP_ID tanımlanmadığı için OneSignal başlatılmadı. .env dosyasına ekleyebilirsiniz.'
-      );
-      return;
-    }
+    const appId =
+      process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID ||
+      '4daa721c-dc66-4ea0-b6c7-bcc78256ba20';
 
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async function (OneSignal: any) {

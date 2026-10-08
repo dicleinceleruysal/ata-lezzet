@@ -8,8 +8,10 @@ export async function POST(request: Request) {
     const { title, message, url } = body;
 
     const appId =
-      process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID || process.env.ONESIGNAL_APP_ID;
-    const restApiKey = process.env.ONESIGNAL_REST_API_KEY;
+      process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID ||
+      process.env.ONESIGNAL_APP_ID;
+    const restApiKey =
+      process.env.ONESIGNAL_REST_API_KEY;
 
     if (!appId) {
       return NextResponse.json(
