@@ -107,18 +107,21 @@ export default function MenuNotificationReminder() {
     const todayStr = getTodayKey();
     const lastNotified = localStorage.getItem('menu_reminder_last_date');
 
-    // Eğer şu an saat 12:00 ile 13:30 arasındaysa ve bugün henüz bildirim gitmediyse hemen gönder
+    // Eğer şu an saat 11:30 ile 13:30 arasındaysa ve bugün henüz bildirim gitmediyse hemen gönder
     const currentH = now.getHours();
-    if (currentH === 12 && lastNotified !== todayStr) {
+    const currentM = now.getMinutes();
+    const isPast1130 = currentH > 11 || (currentH === 11 && currentM >= 30);
+    const isBefore1330 = currentH < 13 || (currentH === 13 && currentM <= 30);
+    if (isPast1130 && isBefore1330 && lastNotified !== todayStr) {
       triggerReminder(false);
       return;
     }
 
-    // Hedef: Bugün 12:00:00 veya Yarın 12:00:00
-    let target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0);
+    // Hedef: Bugün 11:30:00 veya Yarın 11:30:00
+    let target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 11, 30, 0, 0);
     if (now.getTime() >= target.getTime()) {
-      // Bugün 12:00 geçti, yarına kur
-      target = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 12, 0, 0, 0);
+      // Bugün 11:30 geçti, yarına kur
+      target = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 11, 30, 0, 0);
     }
 
     const delayMs = target.getTime() - now.getTime();
@@ -172,7 +175,7 @@ export default function MenuNotificationReminder() {
     // Zamanlayıcıyı başlat
     scheduleNextReminder();
 
-    // Periyodik kontrol: Her 20 saniyede bir saati güncelle ve 12:00:00 kontrolü yap
+    // Periyodik kontrol: Her 20 saniyede bir saati güncelle ve 11:30:00 kontrolü yap
     intervalRef.current = setInterval(() => {
       updateTime();
       const now = new Date();
@@ -181,8 +184,8 @@ export default function MenuNotificationReminder() {
       const todayStr = getTodayKey();
       const lastNotified = localStorage.getItem('menu_reminder_last_date');
 
-      // Saat 12:00 olduğunda ve bugün henüz gönderilmediyse
-      if (h === 12 && m === 0 && lastNotified !== todayStr) {
+      // Saat 11:30 olduğunda ve bugün henüz gönderilmediyse
+      if (h === 11 && m === 30 && lastNotified !== todayStr) {
         triggerReminder(false);
       }
     }, 20000);
@@ -267,7 +270,7 @@ export default function MenuNotificationReminder() {
             <div className="flex-1 space-y-1">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-black uppercase tracking-wider bg-white/25 px-2 py-0.5 rounded-md">
-                  Saat 12:00 • Öğle Vakti
+                  Saat 11:30 • Öğle Vakti
                 </span>
                 <span className="text-[11px] font-semibold text-amber-100">Ata Lezzet</span>
               </div>
@@ -314,7 +317,7 @@ export default function MenuNotificationReminder() {
               <span className="text-xl">🔔</span>
               <div>
                 <p className="text-xs font-bold text-stone-100">
-                  Saat 12:00 Menü Hatırlatıcısı
+                  Saat 11:30 Menü Hatırlatıcısı
                 </p>
                 <p className="text-[11px] text-stone-400">
                   Her gün öğle yemeğinde günün menüsünü bildirelim mi?
@@ -354,11 +357,11 @@ export default function MenuNotificationReminder() {
               ? 'bg-amber-500 hover:bg-amber-400 text-stone-950 border-amber-600 shadow-amber-500/20'
               : 'bg-stone-900/90 hover:bg-stone-800 text-stone-300 border-stone-700'
           }`}
-          title="Saat 12:00 Günün Menüsü Hatırlatıcısı"
+          title="Saat 11:30 Günün Menüsü Hatırlatıcısı"
         >
           <span className="text-base animate-bounce-slow">🔔</span>
           <span className="text-xs font-black hidden sm:inline">
-            12:00 Hatırlatıcı
+            11:30 Hatırlatıcı
           </span>
           <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
         </button>
@@ -374,7 +377,7 @@ export default function MenuNotificationReminder() {
                     Öğle Menüsü Bildirimi
                   </h4>
                   <p className="text-[11px] text-stone-500 font-medium">
-                    Her gün saat 12:00'de
+                    Her gün saat 11:30'da
                   </p>
                 </div>
               </div>
@@ -396,7 +399,7 @@ export default function MenuNotificationReminder() {
               <div className="flex items-center justify-between">
                 <span className="text-stone-500 font-medium">Sıradaki Bildirim:</span>
                 <span className="font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">
-                  12:00 (Öğle Vakti)
+                  11:30 (Öğle Vakti)
                 </span>
               </div>
               <div className="flex items-center justify-between pt-1 border-t border-stone-200/60">
@@ -448,7 +451,7 @@ export default function MenuNotificationReminder() {
             {/* BİLGİ METNİ */}
             <div className="pt-2 border-t border-stone-100">
               <div className="bg-amber-50/70 rounded-xl p-2.5 border border-amber-200/60 text-[11px] text-amber-900 leading-relaxed font-medium">
-                💡 Her gün saat <strong>12:00</strong>'de öğle yemeği menüsü otomatik olarak hatırlatılır.
+                💡 Her gün saat <strong>11:30</strong>'da öğle yemeği menüsü otomatik olarak hatırlatılır.
               </div>
             </div>
           </div>
